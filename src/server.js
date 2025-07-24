@@ -16,12 +16,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "'unsafe-inline'"],
       styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
       fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       mediaSrc: ["'self'", "blob:"],
-      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://js.squareupsandbox.com", `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`, "https://squareup.com"],
     },
   },
 }));
@@ -99,15 +99,15 @@ const startServer = async () => {
     });
     return server;
   } catch (error) {
-    console.error('Unable to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
-// Only start the server if this file is run directly (not required/imported)
+// Start the server only if this file is run directly (e.g., `node src/server.js`)
 if (require.main === module) {
   startServer();
 }
 
-// Export for testing
-module.exports = { app, connectDB };
+// Export the app for testing purposes
+module.exports = app;

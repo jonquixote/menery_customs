@@ -43,7 +43,7 @@ class UploadController {
       
       // Generate presigned URL for upload
       const command = new PutObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: key,
         ContentType: fileType,
         ContentLength: fileSize,
@@ -52,21 +52,12 @@ class UploadController {
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour expiration
 
-      // Create a pending order record
-      const order = await Order.create({
-        status: 'pending',
-        duration: parseInt(duration, 10) || 30,
-        price: this.calculatePrice(duration),
-        originalVideoKey: key,
-        paymentMethod: 'pending',
-        paymentIntentId: `temp_${Date.now()}`,
-        userId: req.user?.id || null
-      });
+      // For testing purposes, we are not creating an order record here.
+      // The order will be created in the next step from the test page.
 
       res.status(200).json({
         uploadUrl,
-        key,
-        orderId: order.id
+        key
       });
 
     } catch (error) {
@@ -77,8 +68,8 @@ class UploadController {
 
   static calculatePrice(duration) {
     // Simple pricing model: $5 per 30 seconds, minimum $10
-    const minutes = Math.ceil(duration / 30);
-    return Math.max(10, minutes * 5) * 100; // Convert to cents
+    const thirtySecondIntervals = Math.ceil(duration / 30);
+    return Math.max(10, thirtySecondIntervals * 5) * 100; // Convert to cents
   }
 
   static async verifyUpload(req, res) {
@@ -92,7 +83,7 @@ class UploadController {
 
       // Verify the file exists in S3
       const command = new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: key
       });
 

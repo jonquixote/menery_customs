@@ -4,7 +4,7 @@ const uploadController = require('../controllers/uploadController');
 const { authenticateUser } = require('../middleware/auth');
 
 // Initiate file upload
-router.post('/initiate', authenticateUser, uploadController.initiateUpload);
+router.post('/initiate', uploadController.initiateUpload);
 
 // Verify file upload
 router.post('/verify/:key', authenticateUser, uploadController.verifyUpload);

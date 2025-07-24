@@ -16,4 +16,7 @@ router.put('/orders/:orderId/status', AdminController.updateOrderStatus);
 // GET /api/admin/orders
 router.get('/orders', AdminController.getAllOrders);
 
+// POST /api/admin/generate-token
+router.post('/generate-token', AdminController.generateToken);
+
 module.exports = router;

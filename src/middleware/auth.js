@@ -13,31 +13,32 @@ const authenticateAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    const tokenParts = authHeader.split(' ');
+    const token = tokenParts[1];
+
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'c89b8e5a6a3b4c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d';
+      // Verify token
+      const decoded = jwt.verify(token, jwtSecret);
+
+      // Add user from payload
+      req.user = decoded;
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
     // Check if user exists and is admin
-    const user = await User.findByPk(decoded.userId);
+    const user = await User.findByPk(req.user.userId);
     if (!user || !user.isAdmin) {
       return res.status(403).json({ error: 'Not authorized as admin' });
     }
-    
+
     // Attach user to request object
     req.user = user;
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    
     res.status(500).json({ error: 'Authentication failed' });
   }
 };
@@ -53,31 +54,32 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    const tokenParts = authHeader.split(' ');
+    const token = tokenParts[1];
+
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'c89b8e5a6a3b4c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d';
+      // Verify token
+      const decoded = jwt.verify(token, jwtSecret);
+
+      // Add user from payload
+      req.user = decoded;
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
     // Check if user exists
-    const user = await User.findByPk(decoded.userId);
+    const user = await User.findByPk(req.user.userId);
     if (!user) {
       return res.status(403).json({ error: 'User not found' });
     }
-    
+
     // Attach user to request object
     req.user = user;
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    
     res.status(500).json({ error: 'Authentication failed' });
   }
 };

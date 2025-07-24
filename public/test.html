@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bob Menery Voiceovers - Test Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.squareupsandbox.com/v2/paymentform"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .test-result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error { color: #e53e3e; }
+        .success { color: #38a169; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">Bob Menery Voiceovers - Test Page</h1>
+        
+        <!-- Auth Section -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Authentication</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">JWT Token</label>
+                    <input type="text" id="authToken" class="w-full p-2 border rounded" placeholder="Enter admin token">
+                </div>
+                <div class="flex items-end">
+                    <button id="setToken" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Set Token
+                    </button>
+                </div>
+            </div>
+            <div id="authStatus" class="text-sm"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div class="flex space-x-2 mb-4 border-b">
+                <button class="px-4 py-2 font-medium tab-button active" data-tab="upload">Upload Test</button>
+                <button class="px-4 py-2 font-medium tab-button" data-tab="order">Order Test</button>
+                <button class="px-4 py-2 font-medium tab-button" data-tab="payment">Payment Test</button>
+                <button class="px-4 py-2 font-medium tab-button" data-tab="admin">Admin Test</button>
+            </div>
+
+            <!-- Upload Test Tab -->
+            <div id="upload" class="tab-content active">
+                <h2 class="text-xl font-semibold mb-4">File Upload Test</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Video File (Max 100MB)</label>
+                    <input type="file" id="videoFile" accept="video/*" class="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (seconds)</label>
+                    <input type="number" id="videoDuration" min="5" max="300" value="30" class="w-full p-2 border rounded">
+                </div>
+                <button id="initiateUpload" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Get Presigned URL
+                </button>
+                <div id="uploadResult" class="test-result mt-4"></div>
+            </div>
+
+            <!-- Order Test Tab -->
+            <div id="order" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4">Create Order</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Key (from upload)</label>
+                    <input type="text" id="videoKey" class="w-full p-2 border rounded" placeholder="Paste the video key from upload step">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="customerEmail" class="w-full p-2 border rounded" placeholder="customer@example.com">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                    <textarea id="instructions" class="w-full p-2 border rounded" rows="3" placeholder="Special instructions for the voiceover"></textarea>
+                </div>
+                <button id="createOrder" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Create Order
+                </button>
+                <div id="orderResult" class="test-result mt-4"></div>
+            </div>
+
+            <!-- Payment Test Tab -->
+            <div id="payment" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4">Payment Test</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                        <input type="text" id="orderId" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (cents)</label>
+                        <input type="number" id="amount" value="1000" class="w-full p-2 border rounded">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Email</label>
+                        <input type="email" id="customerEmail" value="test@example.com" class="w-full p-2 border rounded">
+                    </div>
+                </div>
+                <button id="createPaymentLink" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Create Payment Link
+                </button>
+                <div id="paymentResult" class="test-result mt-4"></div>
+                <div id="paymentStatus" class="test-result mt-4 hidden"></div>
+            </div>
+
+            <!-- Admin Test Tab -->
+            <div id="admin" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4">Admin Test</h2>
+                <div class="space-y-6">
+                    <!-- List Orders Section -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-medium mb-3">Order Management</h3>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <button id="listAllOrders" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                List All Orders
+                            </button>
+                            <button id="listPendingOrders" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                                Pending Orders
+                            </button>
+                            <button id="listProcessingOrders" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                                Processing Orders
+                            </button>
+                        </div>
+                        <div id="ordersList" class="test-result max-h-64 overflow-y-auto"></div>
+                    </div>
+                    
+                    <!-- Update Order Status Section -->
+                    <div class="bg-gray-50 p-4 rounded-lg border-t">
+                        <h3 class="text-lg font-medium mb-3">Update Order Status</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                                <div class="flex">
+                                    <input type="text" id="orderId" class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <button id="getOrderDetails" class="bg-gray-200 hover:bg-gray-300 px-3 rounded-r">
+                                        🔍
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="orderStatus" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="complete">Complete</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end space-x-2">
+                                <button id="updateStatus" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex-1">
+                                    Update Status
+                                </button>
+                                <button id="completeOrder" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                                    Complete
+                                </button>
+                            </div>
+                        </div>
+                        <div id="orderDetails" class="mb-4 p-3 bg-white rounded border hidden">
+                            <h4 class="font-medium mb-2">Order Details</h4>
+                            <pre id="orderDetailsContent" class="text-sm"></pre>
+                        </div>
+                        <div id="statusUpdateResult" class="test-result"></div>
+                    </div>
+                    
+                    <!-- Send Notification Section -->
+                    <div class="bg-gray-50 p-4 rounded-lg border-t">
+                        <h3 class="text-lg font-medium mb-3">Send Notification</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                                <input type="text" id="notificationOrderId" class="w-full p-2 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                <select id="notificationType" class="w-full p-2 border rounded">
+                                    <option value="status_update">Status Update</option>
+                                    <option value="completed">Order Completed</option>
+                                    <option value="custom">Custom Message</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="sendNotification" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                        <div id="notificationMessage" class="mb-4 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                            <textarea id="customMessage" class="w-full p-2 border rounded" rows="3" placeholder="Enter custom message"></textarea>
+                        </div>
+                        <div id="notificationResult" class="test-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhook Test Tab -->
+            <div id="webhooks" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4">Webhook Test</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Webhook URL</label>
+                    <input type="text" id="webhookUrl" value="http://localhost:3000/api/webhooks/square" class="w-full p-2 border rounded">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
+                        <input type="text" id="paymentId" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                        <input type="text" id="webhookOrderId" class="w-full p-2 border rounded">
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="testWebhookSuccess" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Test Success Webhook
+                    </button>
+                    <button id="testWebhookFailure" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        Test Failure Webhook
+                    </button>
+                </div>
+                <div id="webhookResult" class="test-result mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        // Store JWT token
+        let authToken = localStorage.getItem('authToken') || '';
+        
+        // Initialize UI
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set token if exists in localStorage
+            const tokenInput = document.getElementById('authToken');
+            if (authToken) {
+                tokenInput.value = authToken;
+                updateAuthStatus('Authenticated', 'success');
+            }
+            
+            // Set up tab switching
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and content
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button and corresponding content
+                    button.classList.add('active');
+                    document.getElementById(button.dataset.tab).classList.add('active');
+                });
+            });
+        });
+        
+        // Helper function to display results
+        function displayResult(containerId, data, isError = false) {
+            const container = document.getElementById(containerId);
+            container.className = 'test-result' + (isError ? ' error' : '');
+            container.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Helper function to update auth status
+        function updateAuthStatus(message, type = 'info') {
+            const statusEl = document.getElementById('authStatus');
+            statusEl.textContent = message;
+            statusEl.className = type;
+        }
+        
+        // Set auth token
+        document.getElementById('setToken').addEventListener('click', () => {
+            const token = document.getElementById('authToken').value.trim();
+            if (token) {
+                authToken = token;
+                localStorage.setItem('authToken', token);
+                updateAuthStatus('Token saved successfully', 'success');
+            } else {
+                updateAuthStatus('Please enter a valid token', 'error');
+            }
+        });
+        
+        // Get auth headers
+        function getAuthHeaders() {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            return headers;
+        }
+        
+        // Upload Test
+        document.getElementById('initiateUpload').addEventListener('click', async () => {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+            const duration = document.getElementById('videoDuration').value;
+            
+            if (!file) {
+                displayResult('uploadResult', 'Please select a file', true);
+                return;
+            }
+            
+            if (!duration || duration < 5 || duration > 300) {
+                displayResult('uploadResult', 'Please enter a valid duration between 5 and 300 seconds', true);
+                return;
+            }
+
+            try {
+                // Get presigned URL
+                const response = await fetch(`${API_BASE_URL}/upload/initiate`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileSize: file.size,
+                        duration: parseInt(duration, 10)
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to get presigned URL');
+                }
+
+                const { uploadUrl, key } = await response.json();
+                
+                // Upload file to S3
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': file.type
+                    },
+                    body: file
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                displayResult('uploadResult', {
+                    success: true,
+                    message: 'File uploaded successfully',
+                    key,
+                    nextStep: 'Proceed to Order tab to create an order with this video'
+                });
+                
+                // Update order form with the uploaded video key
+                document.getElementById('videoKey').value = key;
+            } catch (error) {
+                console.error('Upload error:', error);
+                displayResult('uploadResult', {
+                    success: false,
+                    error: error.message
+                });
+            }
+        });
+
+        // Payment Test
+        document.getElementById('createPaymentLink').addEventListener('click', async () => {
+            const orderId = document.getElementById('orderId').value || `test-order-${Date.now()}`;
+            const amount = parseInt(document.getElementById('amount').value) || 1000;
+            const customerEmail = document.getElementById('customerEmail').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/payments/create-link`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId,
+                        amount,
+                        customerEmail,
+                        customerName: 'Test Customer',
+                        description: 'Test payment',
+                        redirectUrl: window.location.href
+                    })
+                });
+
+                const data = await response.json();
+                displayResult('paymentResult', data);
+                
+                if (data.paymentUrl) {
+                    // Open payment page in new tab
+                    window.open(data.paymentUrl, '_blank');
+                    
+                    // Start polling for payment status
+                    if (data.paymentId) {
+                        pollPaymentStatus(data.paymentId);
+                    }
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                displayResult('paymentResult', {
+                    success: false,
+                    error: error.message
+                });
+            }
+        });
+
+        // Poll payment status
+        async function pollPaymentStatus(paymentId) {
+            const statusElement = document.getElementById('paymentStatus');
+            statusElement.classList.remove('hidden');
+            
+            const checkStatus = async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/payments/status/${paymentId}`);
+                    const data = await response.json();
+                    
+                    statusElement.textContent = `Payment Status: ${data.status || 'unknown'}\n` + 
+                                              `Amount: ${data.amount ? `$${(data.amount / 100).toFixed(2)}` : 'N/A'}`;
+                    
+                    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+                        clearInterval(interval);
+                    }
+                } catch (error) {
+                    console.error('Status check error:', error);
+                    statusElement.textContent += '\nError checking status: ' + error.message;
+                    clearInterval(interval);
+                }
+            };
+            
+            // Check immediately and then every 5 seconds
+            await checkStatus();
+            const interval = setInterval(checkStatus, 5000);
+        }
+
+        // Admin Tests
+        document.getElementById('listOrders').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/orders`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken') || 'your-admin-token'}` }
+                });
+                const data = await response.json();
+                displayResult('adminResult', data);
+            } catch (error) {
+                console.error('List orders error:', error);
+                displayResult('adminResult', { error: error.message });
+            }
+        });
+
+        document.getElementById('updateOrderStatus').addEventListener('click', async () => {
+            const orderId = document.getElementById('updateOrderId').value;
+            const status = document.getElementById('orderStatus').value;
+            
+            if (!orderId) {
+                alert('Please enter an order ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || 'your-admin-token'}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await response.json();
+                displayResult('adminResult', data);
+            } catch (error) {
+                console.error('Update status error:', error);
+                displayResult('adminResult', { error: error.message });
+            }
+        });
+
+        // Webhook Tests
+        document.getElementById('testWebhookSuccess').addEventListener('click', async () => {
+            await testWebhook('success');
+        });
+
+        document.getElementById('testWebhookFailure').addEventListener('click', async () => {
+            await testWebhook('failure');
+        });
+
+        async function testWebhook(type) {
+            const webhookUrl = document.getElementById('webhookUrl').value;
+            const paymentId = document.getElementById('paymentId').value || `test-payment-${Date.now()}`;
+            const orderId = document.getElementById('webhookOrderId').value || `test-order-${Date.now()}`;
+            
+            const event = {
+                type: `payment.${type === 'success' ? 'completed' : 'failed'}`,
+                data: {
+                    object: {
+                        payment: {
+                            id: paymentId,
+                            status: type === 'success' ? 'COMPLETED' : 'FAILED',
+                            amount_money: {
+                                amount: 1000,
+                                currency: 'USD'
+                            },
+                            note: `Order #${orderId}`,
+                            created_at: new Date().toISOString()
+                        }
+                    }
+                }
+            };
+            
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(event)
+                });
+                
+                const data = await response.text();
+                displayResult('webhookResult', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    response: data
+                });
+            } catch (error) {
+                console.error('Webhook test error:', error);
+                displayResult('webhookResult', { error: error.message });
+            }
+        }
+        
+        // Create Order
+        document.getElementById('createOrder').addEventListener('click', async () => {
+            const videoKey = document.getElementById('videoKey').value.trim();
+            const customerEmail = document.getElementById('customerEmail').value.trim();
+            const instructions = document.getElementById('instructions').value.trim();
+            
+            if (!videoKey) {
+                displayResult('orderResult', 'Please provide a video key from the upload step', true);
+                return;
+            }
+            
+            if (!customerEmail) {
+                displayResult('orderResult', 'Please provide a customer email', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/orders`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        videoKey,
+                        customerEmail,
+                        instructions: instructions || 'No special instructions',
+                        duration: parseInt(document.getElementById('videoDuration').value, 10)
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create order');
+                }
+                
+                const order = await response.json();
+                displayResult('orderResult', {
+                    success: true,
+                    message: 'Order created successfully',
+                    orderId: order.id,
+                    nextStep: 'Proceed to Payment tab to create a payment link for this order'
+                });
+                
+                // Update payment form with the order ID
+                document.getElementById('paymentOrderId').value = order.id;
+            } catch (error) {
+                console.error('Order creation error:', error);
+                displayResult('orderResult', {
+                    success: false,
+                    error: error.message
+                }, true);
+            }
+        });
+        
+        // Initialize Square Payment Form
+        let payments = null;
+        let paymentForm = null;
+        
+        async function initializeSquare() {
+            // Initialize Square Payments
+            payments = Square.payments(
+                'sandbox-sq0idb-YourSandboxApplicationId', // Replace with your sandbox application ID
+                'sandbox-sq0idb-YourSandboxLocationId'     // Replace with your sandbox location ID
+            );
+            
+            // Create payment form
+            paymentForm = await payments.paymentForm({
+                callbacks: {
+                    methodsSupported: (methods) => {
+                        // Handle supported payment methods
+                    },
+                    createPaymentRequest: () => {
+                        // Return payment request data
+                        return {
+                            requestShippingAddress: false,
+                            requestBillingContact: false,
+                            amount: document.getElementById('paymentAmount').value,
+                            currency: 'USD',
+                            countryCode: 'US'
+                        };
+                    },
+                    paymentFormRequestedBuyerInput: () => {
+                        // Handle when payment form is ready for input
+                    },
+                    paymentFormReceivedResult: (result) => {
+                        // Handle payment result
+                        displayResult('paymentResult', {
+                            status: 'Payment processed',
+                            details: result
+                        });
+                    },
+                    paymentFormUnsupportedBrowser: (err) => {
+                        // Handle unsupported browser
+                        displayResult('paymentResult', {
+                            error: 'Unsupported browser',
+                            details: err.message
+                        }, true);
+                    },
+                    createPaymentRequestFailed: (err) => {
+                        // Handle payment request failure
+                        displayResult('paymentResult', {
+                            error: 'Payment request failed',
+                            details: err.message
+                        }, true);
+                    },
+                    paymentFormConfigurationError: (err) => {
+                        // Handle configuration error
+                        displayResult('paymentResult', {
+                            error: 'Configuration error',
+                            details: err.message
+                        }, true);
+                    }
+                }
+            });
+            
+            // Mount the payment form
+            await paymentForm.build('#paymentContainer');
+        }
+        
+        // Initialize Square when payment tab is shown
+        document.querySelector('[data-tab="payment"]').addEventListener('click', () => {
+            if (!payments) {
+                initializeSquare().catch(error => {
+                    console.error('Square initialization failed:', error);
+                    displayResult('paymentResult', {
+                        error: 'Failed to initialize payment system',
+                        details: error.message
+                    }, true);
+                });
+            }
+        });
+        
+        // Create Payment Link
+        document.getElementById('createPayment').addEventListener('click', async () => {
+            const orderId = document.getElementById('paymentOrderId').value.trim();
+            const amount = document.getElementById('paymentAmount').value;
+            
+            if (!orderId) {
+                displayResult('paymentResult', 'Please enter an order ID', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/payments/create-payment`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        orderId,
+                        amount: parseInt(amount, 10)
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create payment');
+                }
+                
+                const { paymentUrl, paymentId } = await response.json();
+                
+                // Store payment ID for status checking
+                document.getElementById('paymentOrderId').dataset.paymentId = paymentId;
+                
+                displayResult('paymentResult', {
+                    success: true,
+                    paymentUrl,
+                    paymentId,
+                    nextStep: 'Customer can visit the payment URL to complete the payment',
+                    checkStatusUsing: 'Use the Check Status button to verify payment status'
+                });
+                
+                // Open payment URL in new tab
+                window.open(paymentUrl, '_blank');
+                
+            } catch (error) {
+                console.error('Payment error:', error);
+                displayResult('paymentResult', {
+                    success: false,
+                    error: error.message
+                }, true);
+            }
+        });
+        
+        // Check Payment Status
+        document.getElementById('checkPaymentStatus').addEventListener('click', async () => {
+            const paymentId = document.getElementById('paymentOrderId').dataset.paymentId;
+            
+            if (!paymentId) {
+                displayResult('paymentResult', 'No payment ID found. Create a payment first.', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/payments/status/${paymentId}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to get payment status');
+                }
+                
+                const status = await response.json();
+                displayResult('paymentResult', {
+                    status: 'Payment status retrieved',
+                    details: status
+                });
+                
+            } catch (error) {
+                console.error('Status check error:', error);
+                displayResult('paymentResult', {
+                    error: 'Failed to check payment status',
+                    details: error.message
+                }, true);
+            }
+        });
+        
+        // Admin Functions
+        document.addEventListener('DOMContentLoaded', () => {
+            // Toggle notification message field
+            document.getElementById('notificationType').addEventListener('change', (e) => {
+                const messageField = document.getElementById('notificationMessage');
+                messageField.classList.toggle('hidden', e.target.value !== 'custom');
+            });
+            
+            // List all orders
+            document.getElementById('listAllOrders').addEventListener('click', () => fetchOrders());
+            
+            // List pending orders
+            document.getElementById('listPendingOrders').addEventListener('click', () => fetchOrders('pending'));
+            
+            // List processing orders
+            document.getElementById('listProcessingOrders').addEventListener('click', () => fetchOrders('processing'));
+            
+            // Get order details
+            document.getElementById('getOrderDetails').addEventListener('click', async () => {
+                const orderId = document.getElementById('orderId').value.trim();
+                if (!orderId) {
+                    displayResult('statusUpdateResult', 'Please enter an order ID', true);
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}`, {
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to fetch order details');
+                    }
+                    
+                    const order = await response.json();
+                    const detailsEl = document.getElementById('orderDetails');
+                    const contentEl = document.getElementById('orderDetailsContent');
+                    
+                    contentEl.textContent = JSON.stringify(order, null, 2);
+                    detailsEl.classList.remove('hidden');
+                    
+                    // Update status dropdown to match current status
+                    if (order.status) {
+                        document.getElementById('orderStatus').value = order.status;
+                    }
+                    
+                    displayResult('statusUpdateResult', {
+                        success: true,
+                        message: 'Order details loaded',
+                        orderId: order.id
+                    });
+                    
+                } catch (error) {
+                    console.error('Error fetching order:', error);
+                    displayResult('statusUpdateResult', {
+                        error: 'Failed to fetch order',
+                        details: error.message
+                    }, true);
+                }
+            });
+            
+            // Update order status
+            document.getElementById('updateStatus').addEventListener('click', async () => {
+                await updateOrderStatus(false);
+            });
+            
+            // Complete order
+            document.getElementById('completeOrder').addEventListener('click', async () => {
+                document.getElementById('orderStatus').value = 'complete';
+                await updateOrderStatus(true);
+            });
+            
+            // Send notification
+            document.getElementById('sendNotification').addEventListener('click', sendNotification);
+        });
+        
+        // Fetch orders with optional status filter
+        async function fetchOrders(status = '') {
+            try {
+                let url = `${API_BASE_URL}/admin/orders`;
+                if (status) {
+                    url += `?status=${status}`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to fetch orders');
+                }
+                
+                const orders = await response.json();
+                displayResult('ordersList', {
+                    count: orders.length,
+                    orders: orders.map(o => ({
+                        id: o.id,
+                        status: o.status,
+                        customerEmail: o.customerEmail,
+                        amount: o.amount ? `$${(o.amount / 100).toFixed(2)}` : 'N/A',
+                        createdAt: new Date(o.createdAt).toLocaleString()
+                    }))
+                });
+                
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                displayResult('ordersList', {
+                    error: 'Failed to fetch orders',
+                    details: error.message
+                }, true);
+            }
+        }
+        
+        // Update order status
+        async function updateOrderStatus(isComplete) {
+            const orderId = document.getElementById('orderId').value.trim();
+            const status = document.getElementById('orderStatus').value;
+            
+            if (!orderId) {
+                displayResult('statusUpdateResult', 'Please enter an order ID', true);
+                return;
+            }
+            
+            try {
+                const endpoint = isComplete 
+                    ? `${API_BASE_URL}/admin/orders/${orderId}/complete`
+                    : `${API_BASE_URL}/admin/orders/${orderId}/status`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'PATCH',
+                    headers: getAuthHeaders(),
+                    body: isComplete ? null : JSON.stringify({ status })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update order status');
+                }
+                
+                const result = await response.json();
+                displayResult('statusUpdateResult', {
+                    success: true,
+                    message: `Order ${isComplete ? 'completed' : 'status updated'} successfully`,
+                    order: result
+                });
+                
+                // Refresh order details
+                if (document.getElementById('orderDetails').classList.contains('hidden') === false) {
+                    document.getElementById('getOrderDetails').click();
+                }
+                
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                displayResult('statusUpdateResult', {
+                    error: 'Failed to update order status',
+                    details: error.message
+                }, true);
+            }
+        }
+        
+        // Send notification
+        async function sendNotification() {
+            const orderId = document.getElementById('notificationOrderId').value.trim();
+            const type = document.getElementById('notificationType').value;
+            const message = document.getElementById('customMessage').value;
+            
+            if (!orderId) {
+                displayResult('notificationResult', 'Please enter an order ID', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/notify`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        orderId,
+                        type,
+                        message: type === 'custom' ? message : undefined
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to send notification');
+                }
+                
+                const result = await response.json();
+                displayResult('notificationResult', {
+                    success: true,
+                    message: 'Notification sent successfully',
+                    notification: result
+                });
+                
+                // Clear form
+                if (type === 'custom') {
+                    document.getElementById('customMessage').value = '';
+                }
+                
+            } catch (error) {
+                console.error('Error sending notification:', error);
+                displayResult('notificationResult', {
+                    error: 'Failed to send notification',
+                    details: error.message
+                }, true);
+            }
+        }
+    </script>
+</body>
+</html>

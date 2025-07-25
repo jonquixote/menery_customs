@@ -1,6 +1,7 @@
 // Import the Square client
 const { Client } = require('square');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto'); // Import crypto module
 
 class SquareService {
   constructor() {
@@ -8,6 +9,7 @@ class SquareService {
     this._initialized = false;
     this._initializationError = null;
     this.locationId = null;
+    this.webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY; // Add webhook signature key
     this._initialize();
   }
 
@@ -217,11 +219,31 @@ class SquareService {
     }
   }
 
+  /**
+   * Verifies the Square webhook signature.
+   * @param {string} signature - The X-Square-Signature header from the webhook request.
+   * @param {string} body - The raw request body.
+   * @param {string} timestamp - The X-Square-Timestamp header from the webhook request.
+   * @returns {boolean} True if the signature is valid, false otherwise.
+   */
   verifyWebhookSignature(signature, body, timestamp) {
-    // This is a simplified version. In production, you must use Square's SDK to verify the signature
-    // against your webhook signature key from the Square Developer Dashboard.
-    console.warn('Webhook signature verification is not fully implemented and is currently bypassed.');
-    return true;
+    if (!this.webhookSignatureKey) {
+      console.error('SQUARE_WEBHOOK_SIGNATURE_KEY is not set. Webhook verification skipped.');
+      return false;
+    }
+
+    try {
+      const hmac = crypto.createHHmac('sha1', this.webhookSignatureKey);
+      hmac.update(body + timestamp);
+      const expectedSignature = hmac.digest('base64');
+
+      // Compare the expected signature with the signature from the header
+      // Using crypto.timingSafeEqual to prevent timing attacks
+      return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+    } catch (error) {
+      console.error('Error verifying webhook signature:', error);
+      return false;
+    }
   }
 }
 

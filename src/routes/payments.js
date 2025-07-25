@@ -9,4 +9,10 @@ router.post('/create-payment-link', PaymentController.createPaymentLink);
 // Note: paymentMethod needs to be passed to the controller to determine which service to use.
 router.get('/status/:paymentId/:paymentMethod', PaymentController.getPaymentStatus);
 
+// POST /api/payments/create-paypal-order - Create a PayPal order
+router.post('/create-paypal-order', PaymentController.createPaypalOrder);
+
+// POST /api/payments/capture-paypal-order - Capture a PayPal order
+router.post('/capture-paypal-order', PaymentController.capturePaypalOrder);
+
 module.exports = router;

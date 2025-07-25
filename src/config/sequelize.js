@@ -1,6 +1,7 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
 require('dotenv').config();
+require('pg');
 
 const env = process.env.NODE_ENV || 'development';
 const config = require('../../config/database.js')[env];

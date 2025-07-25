@@ -108,24 +108,9 @@ const connectDB = async () => {
   }
 };
 
-// Start the server
-const startServer = async () => {
-  try {
-    await connectDB();
-    const server = app.listen(PORT, () => {
-      console.log(`Server is running on port ${server.address().port}`);
-    });
-    return server;
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+// Connect to the database when the module is loaded
+connectDB();
 
-// Start the server only if this file is run directly (e.g., `node src/server.js`)
-if (require.main === module) {
-  startServer();
-}
-
-// Export the app for testing purposes
+// In a serverless environment, we export the app directly.
+// The traditional app.listen() is handled by the environment.
 module.exports = app;

@@ -221,12 +221,12 @@
         <section id="packages-section" class="max-w-4xl mx-auto reveal-on-scroll" style="transition-delay: 150ms;">
             <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 2: Choose Your Package</h2>
             <div class="grid md:grid-cols-2 gap-8">
-                <div class="pricing-card glass-card p-8" data-duration="30" data-price="200" onclick="selectPricing(this)">
+                <div class="pricing-card glass-card p-8" data-duration="30" data-price="200">
                     <div class="text-2xl font-bold text-primary-gold mb-2">30 Seconds</div>
                     <div class="text-5xl font-extrabold mb-4">$200</div>
                     <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400"><li>Pro quality recording</li><li>24-48 hour delivery</li></ul>
                 </div>
-                <div class="pricing-card glass-card p-8" data-duration="60" data-price="250" onclick="selectPricing(this)">
+                <div class="pricing-card glass-card p-8" data-duration="60" data-price="250">
                     <div class="text-2xl font-bold text-primary-gold mb-2">60 Seconds</div>
                     <div class="text-5xl font-extrabold mb-4">$250</div>
                     <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400"><li>Pro quality recording</li><li>24-48 hour delivery</li><li>Priority support</li></ul>
@@ -236,14 +236,17 @@
 
         <section class="glass-card max-w-4xl mx-auto reveal-on-scroll p-6 md:p-8" style="transition-delay: 300ms;">
             <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 3: Secure Payment</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button class="payment-btn bg-indigo-600 h-14 flex items-center justify-center" id="squareBtn" onclick="handlePayment('Square')" disabled><i class="fas fa-credit-card text-xl mr-2"></i><span>Card</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-[#0070BA] h-14 flex items-center justify-center" id="paypalBtn" onclick="handlePayment('PayPal')" disabled><i class="fab fa-paypal text-xl mr-2"></i><span>PayPal</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-[#008CFF] h-14 flex items-center justify-center" id="venmoBtn" onclick="handlePayment('Venmo')" disabled><i class="fa-solid fa-v text-xl font-black mr-2"></i><span>Venmo</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-[#00D54B] h-14 flex items-center justify-center" id="cashappBtn" onclick="handlePayment('Cash App')" disabled><i class="fas fa-dollar-sign text-xl mr-2"></i><span>Cash App</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-black h-14 flex items-center justify-center" id="applepayBtn" onclick="handlePayment('Apple Pay')" disabled><i class="fab fa-apple-pay text-2xl mr-2"></i><span>Apple Pay</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-[#F7931A] h-14 text-black flex items-center justify-center" id="bitcoinBtn" onclick="handlePayment('Bitcoin')" disabled><i class="fab fa-bitcoin text-xl mr-2"></i><span>Bitcoin</span><div class="loading hidden ml-2"></div></button>
-                <button class="payment-btn bg-gray-600 h-14 flex items-center justify-center" id="ethereumBtn" onclick="handlePayment('Ethereum')" disabled><i class="fab fa-ethereum text-xl mr-2"></i><span>Ethereum</span><div class="loading hidden ml-2"></div></button>
+            <div class="max-w-md mx-auto">
+                <button class="payment-btn w-full bg-[#0070BA] h-16 flex items-center justify-center text-lg" id="paypalBtn" disabled>
+                    <i class="fab fa-paypal text-2xl mr-3"></i>
+                    <span>Pay with PayPal</span>
+                    <div class="loading hidden ml-2"></div>
+                </button>
+                <p class="text-center mt-4 text-text-secondary">
+                    <i class="fas fa-lock mr-1"></i> Secure Payment via PayPal
+                    <br>
+                    <span class="text-sm">Pay with credit card, debit card, Apple Pay, or Venmo</span>
+                </p>
             </div>
             <p class="text-center mt-6 text-text-secondary"><i class="fas fa-shield-alt mr-2 text-green-400"></i>All payments are secure and encrypted.</p>
         </section>
@@ -258,7 +261,7 @@
                 <div class="flex justify-between"><span>Order ID:</span><span id="orderId" class="font-semibold text-primary-gold"></span></div>
                 <div class="flex justify-between"><span>Paid With:</span><span id="orderPaymentMethod" class="font-semibold text-primary-gold"></span></div>
             </div>
-            <button class="payment-btn w-full h-14 bg-primary-gold text-black" onclick="closeModal()">Start New Order</button>
+            <button class="payment-btn w-full h-14 bg-primary-gold text-black" id="startNewOrderBtn">Start New Order</button>
         </div>
     </div>
 
@@ -269,7 +272,7 @@
         let uploadedFile = null;
         let currentOrderId = null;
         let videoObjectURL = null;
-        const paymentMethods = ['square', 'paypal', 'venmo', 'cashapp', 'applepay', 'bitcoin', 'ethereum'];
+        const paymentMethods = ['paypal']; // Only PayPal payment method now
 
         // --- DOM Element References ---
         const fileInput = document.getElementById('videoFile');
@@ -278,7 +281,11 @@
         const videoPreviewContainer = document.getElementById('videoPreviewContainer');
         const orderForm = document.getElementById('orderForm');
         const successModal = document.getElementById('successModal');
-        const formFields = ['firstName', 'lastName', 'email', 'phone'];
+        const paypalBtn = document.getElementById('paypalBtn');
+        const removeFileBtn = document.querySelector('#videoPreviewContainer button');
+        const startNewOrderBtn = document.getElementById('startNewOrderBtn');
+        const pricingCards = document.querySelectorAll('.pricing-card');
+        const formFields = ['firstName', 'lastName', 'email', 'phone', 'script'];
 
         /**
          * Sets up all event listeners for the file upload area (drag & drop, click).
@@ -350,11 +357,48 @@
          * Checks if the form is valid and enables/disables payment buttons accordingly.
          */
         function checkFormValidity() {
-            const isFormValid = formFields.every(id => document.getElementById(id).value.trim() !== '');
-            const canPay = isFormValid && !!uploadedFile && !!selectedPrice;
-            paymentMethods.forEach(method => {
-                document.getElementById(`${method}Btn`).disabled = !canPay;
-            });
+            try {
+                if (!paypalBtn) {
+                    console.error('PayPal button not found');
+                    return false;
+                }
+                
+                // Check each form field
+                const fieldChecks = formFields.map(id => {
+                    const element = document.getElementById(id);
+                    if (!element) {
+                        console.warn(`Form field with ID '${id}' not found`);
+                        return { id, exists: false, filled: false };
+                    }
+                    const value = element.value ? element.value.trim() : '';
+                    return { id, exists: true, filled: value !== '' };
+                });
+                
+                const isFormValid = fieldChecks.every(f => f.exists && f.filled);
+                const hasFile = !!uploadedFile;
+                const hasPrice = !!selectedPrice;
+                const canPay = isFormValid && hasFile && hasPrice;
+                
+                // Debug logs
+                console.group('Form Validation');
+                console.log('Form Fields:', fieldChecks);
+                console.log('Has Uploaded File:', hasFile);
+                console.log('Selected Price:', selectedPrice);
+                console.log('Is Form Valid:', isFormValid);
+                console.log('Can Pay:', canPay);
+                console.groupEnd();
+                
+                // Only update the button state if it exists
+                paypalBtn.disabled = !canPay;
+                return canPay;
+                
+            } catch (error) {
+                console.error('Error in checkFormValidity:', error);
+                if (paypalBtn) {
+                    paypalBtn.disabled = true;
+                }
+                return false;
+            }
         }
 
         /**
@@ -362,50 +406,76 @@
          * @param {string} method The selected payment method.
          */
         async function handlePayment(method) {
-            const btn = document.getElementById(`${method.toLowerCase().replace(/\s/g, '')}Btn`);
+            const btn = paypalBtn;
             const loadingSpinner = btn.querySelector('.loading');
             
             btn.disabled = true;
             loadingSpinner.classList.remove('hidden');
             
             try {
-                const orderDetails = {
-                    orderId: currentOrderId || uuidv4(), // Generate a new order ID if not already set
-                    amount: selectedPrice,
-                    customerEmail: document.getElementById('email').value,
-                    paymentMethod: method,
-                    description: `Voiceover Order - ${selectedDuration}s`,
-                    redirectUrl: `${window.location.origin}/order/status` // Use current origin for redirect
-                };
+                // First, validate the form
+                if (!checkFormValidity()) {
+                    throw new Error('Please fill in all required fields and upload your video.');
+                }
 
-                // If it's a new order, create a payment link
-                const response = await fetch('/api/create-payment-link', { // Assuming your backend endpoint is /api/create-payment-link
+                // Create form data for file upload
+                const formData = new FormData();
+                formData.append('video', uploadedFile);
+                formData.append('email', document.getElementById('email').value);
+                // Combine firstName and lastName for the 'name' field
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                formData.append('name', `${firstName} ${lastName}`);
+                formData.append('phone', document.getElementById('phone').value);
+                // Use the correct ID for the script textarea
+                formData.append('notes', document.getElementById('script').value);
+                formData.append('duration', selectedDuration);
+                formData.append('amount', selectedPrice);
+                formData.append('paymentMethod', 'paypal');
+                
+                // First, upload the video and create the order
+                const uploadResponse = await fetch('/api/orders', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderDetails),
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    const error = await uploadResponse.json();
+                    throw new Error(error.message || 'Failed to create order');
+                }
+                
+                const orderData = await uploadResponse.json();
+                currentOrderId = orderData.orderId;
+
+                // Then create the payment link
+                const paymentResponse = await fetch('/api/payments/create-payment-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: currentOrderId,
+                        amount: selectedPrice,
+                        customerEmail: document.getElementById('email').value,
+                        // Use the combined name for customerName
+                        customerName: `${firstName} ${lastName}`,
+                        description: `Voiceover Order - ${selectedDuration}s`,
+                        paymentMethod: 'paypal',
+                        redirectUrl: `${window.location.origin}/order/status`
+                    })
                 });
 
-                const data = await response.json();
+                const paymentData = await paymentResponse.json();
 
-                if (data.success) {
-                    currentOrderId = data.orderId; // Update currentOrderId with the one from backend
-                    if (method.toLowerCase() === 'paypal') {
-                        window.location.href = data.paymentUrl; // Redirect to PayPal
-                    } else {
-                        // Handle other payment methods (e.g., redirect to Square payment URL)
-                        // For now, simulate success for other methods
-                        showSuccessModal(method);
-                    }
+                if (paymentData.success) {
+                    // Redirect to PayPal
+                    window.location.href = paymentData.paymentUrl || paymentData.paypalRedirectUrl;
                 } else {
-                    throw new Error(data.error || 'Payment initiation failed.');
+                    throw new Error(paymentData.error || 'Payment initiation failed');
                 }
 
             } catch (error) {
                 console.error('Payment handling error:', error);
                 alert(`Payment failed: ${error.message}`);
-                btn.disabled = false; // Re-enable button on error
+                btn.disabled = false;
                 loadingSpinner.classList.add('hidden');
             }
         }
@@ -421,41 +491,15 @@
         }
 
         /**
-         * Closes the success modal and resets the form.
+         * Handles the selection of a pricing package.
+         * @param {HTMLElement} card The clicked pricing card element.
          */
-        function closeModal() {
-            successModal.classList.add('hidden');
-            resetForm();
-        }
-
-        /**
-         * Resets the entire form to its initial state.
-         */
-        function resetForm() {
-            orderForm.reset();
-            removeFile();
-            selectedDuration = null;
-            selectedPrice = null;
-            currentOrderId = null;
+        function selectPricing(card) {
             document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('selected'));
-            // Re-enable payment buttons after reset
-            paymentMethods.forEach(method => {
-                document.getElementById(`${method}Btn`).disabled = !checkFormValidity(); // Re-check validity
-            });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        /**
-         * Checks if the form is valid and enables/disables payment buttons accordingly.
-         * Returns true if form is valid, false otherwise.
-         */
-        function checkFormValidity() {
-            const isFormValid = formFields.every(id => document.getElementById(id).value.trim() !== '');
-            const canPay = isFormValid && !!uploadedFile && !!selectedPrice;
-            paymentMethods.forEach(method => {
-                document.getElementById(`${method}Btn`).disabled = !canPay;
-            });
-            return canPay; // Return validity status
+            card.classList.add('selected');
+            selectedDuration = card.dataset.duration;
+            selectedPrice = card.dataset.price;
+            checkFormValidity();
         }
 
         /**
@@ -474,11 +518,43 @@
 
         // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const form = document.getElementById('orderForm');
+            const paypalBtn = document.getElementById('paypalBtn');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            const startNewOrderBtn = document.getElementById('startNewOrderBtn');
+            const fileInput = document.getElementById('fileInput');
+            const fileNameDisplay = document.getElementById('fileName');
+            const uploadArea = document.getElementById('uploadArea');
+            const pricingCards = document.querySelectorAll('.pricing-card');
+            
+            // Form field IDs for validation
+            const formFields = ['firstName', 'lastName', 'email', 'phone', 'script'];
+            
+            // State variables
+            let uploadedFile = null;
+            let selectedDuration = null;
+            let selectedPrice = null;
+            let currentOrderId = null;
             setupFileUpload();
             setupScrollAnimations();
             checkFormValidity();
             // Add input listeners to check validity in real-time
             formFields.forEach(id => document.getElementById(id).addEventListener('input', checkFormValidity));
+
+            // Attach event listeners for pricing cards
+            pricingCards.forEach(card => {
+                card.addEventListener('click', () => selectPricing(card));
+            });
+
+            // Attach event listener for PayPal button
+            paypalBtn.addEventListener('click', () => handlePayment('PayPal'));
+
+            // Attach event listener for remove file button
+            removeFileBtn.addEventListener('click', removeFile);
+
+            // Attach event listener for start new order button
+            startNewOrderBtn.addEventListener('click', closeModal);
         });
     </script>
 </body>

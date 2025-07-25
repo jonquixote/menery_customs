@@ -36,6 +36,11 @@ module.exports = (sequelize, DataTypes) => {
     validate: {
       len: [10, 20]
     }
+  },
+  isTest: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   }
 }, {
     tableName: 'users',

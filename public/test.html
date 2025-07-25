@@ -28,11 +28,13 @@
         <h1 class="text-3xl font-bold mb-8 text-center">Bob Menery Voiceovers - Test Page</h1>
         
         <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <div class="flex space-x-2 mb-4 border-b">
+            <div class="flex space-x-2 mb-4 border-b overflow-x-auto">
                 <button class="px-4 py-2 font-medium tab-button active" data-tab="upload">Upload Test</button>
                 <button class="px-4 py-2 font-medium tab-button" data-tab="order">Order Test</button>
                 <button class="px-4 py-2 font-medium tab-button" data-tab="payment">Payment Test</button>
+                <button class="px-4 py-2 font-medium tab-button" data-tab="email">Email Test</button>
                 <button class="px-4 py-2 font-medium tab-button" data-tab="admin">Admin Test</button>
+                <button class="px-4 py-2 font-medium tab-button" data-tab="webhooks">Webhooks</button>
             </div>
 
             <!-- Upload Test Tab -->
@@ -64,9 +66,23 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video Key (from upload)</label>
                     <input type="text" id="videoKey" class="w-full p-2 border rounded" placeholder="Paste the video key from upload step">
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" id="orderCustomerEmail" class="w-full p-2 border rounded" placeholder="customer@example.com">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                        <input type="text" id="customerName" class="w-full p-2 border rounded" value="Test Customer" placeholder="Customer Name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="orderCustomerEmail" class="w-full p-2 border rounded" value="test@example.com" placeholder="customer@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Amount (USD)</label>
+                        <input type="number" id="orderAmount" value="19.99" step="0.01" min="0.01" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (seconds)</label>
+                        <input type="number" id="orderDuration" value="60" min="5" class="w-full p-2 border rounded">
+                    </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
@@ -116,6 +132,46 @@
                 </div>
                 <div id="paymentResult" class="test-result mt-4"></div>
                 <div id="paymentStatus" class="test-result mt-4 hidden"></div>
+            </div>
+
+            <!-- Email Test Tab -->
+            <div id="email" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4">Email Test</h2>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">To Email</label>
+                            <input type="email" id="testEmailTo" value="test@example.com" class="w-full p-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Template</label>
+                            <select id="emailTemplate" class="w-full p-2 border rounded">
+                                <option value="order_confirmation">Order Confirmation</option>
+                                <option value="payment_received">Payment Received</option>
+                                <option value="order_complete">Order Complete</option>
+                                <option value="custom">Custom Message</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="customEmailFields" class="hidden">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                            <input type="text" id="emailSubject" class="w-full p-2 border rounded" placeholder="Email subject">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                            <textarea id="emailMessage" class="w-full p-2 border rounded" rows="4" placeholder="Email message content"></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Order ID (optional)</label>
+                        <input type="text" id="emailOrderId" class="w-full p-2 border rounded" placeholder="Order ID for template">
+                    </div>
+                    <button id="sendTestEmail" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Send Test Email
+                    </button>
+                    <div id="emailTestResult" class="test-result mt-4"></div>
+                </div>
             </div>
 
             <!-- Admin Test Tab -->
@@ -308,6 +364,15 @@
             if (orderIdInput && !orderIdInput.value) {
                 orderIdInput.value = `test-order-${Date.now()}`;
             }
+            
+            // Toggle custom email fields
+            document.getElementById('emailTemplate').addEventListener('change', (e) => {
+                const customFields = document.getElementById('customEmailFields');
+                customFields.classList.toggle('hidden', e.target.value !== 'custom');
+            });
+            
+            // Initialize email test button
+            document.getElementById('sendTestEmail').addEventListener('click', sendTestEmail);
         });
         
         // --- Authentication ---
@@ -376,27 +441,69 @@
 
         async function handleCreateOrder() {
             const videoKey = document.getElementById('videoKey').value.trim();
+            const customerName = document.getElementById('customerName').value.trim();
             const customerEmail = document.getElementById('orderCustomerEmail').value.trim();
+            const amount = document.getElementById('orderAmount').value.trim();
+            const duration = document.getElementById('orderDuration').value.trim();
             const instructions = document.getElementById('instructions').value.trim();
             
             if (!videoKey) return displayResult('orderResult', 'Please provide a video key from the upload step.', true);
+            if (!customerName) return displayResult('orderResult', 'Please provide a customer name.', true);
             if (!customerEmail) return displayResult('orderResult', 'Please provide a customer email.', true);
+            if (!amount) return displayResult('orderResult', 'Please provide an amount.', true);
+            if (!duration) return displayResult('orderResult', 'Please provide a duration.', true);
             
             try {
+                const orderData = {
+                    name: customerName,
+                    email: customerEmail,
+                    amount: amount,
+                    duration: parseInt(duration, 10),
+                    videoKey: videoKey,
+                    instructions: instructions || 'No special instructions',
+                    paymentMethod: 'paypal', // Default to paypal
+                    isTest: true // Explicitly mark as test order
+                };
+
+                console.log('Sending order data:', orderData);
+
                 const response = await fetch(`${API_BASE_URL}/orders`, {
                     method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ videoKey, customerEmail, instructions, duration: parseInt(document.getElementById('videoDuration').value, 10) })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify(orderData)
                 });
                 
-                if (!response.ok) throw new Error((await response.json()).error || 'Failed to create order');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Order creation failed:', errorData);
+                    throw new Error(errorData.error || 'Failed to create order');
+                }
                 
                 const order = await response.json();
-                displayResult('orderResult', { success: true, message: 'Order created successfully!', orderId: order.id });
-                document.getElementById('paymentOrderId').value = order.id;
+                console.log('Order created successfully:', order);
+                
+                displayResult('orderResult', { 
+                    success: true, 
+                    message: 'Order created successfully!', 
+                    orderId: order.id,
+                    data: order
+                });
+                
+                // Auto-fill payment form with order details
+                document.getElementById('paymentOrderId').value = order.id || '';
+                document.getElementById('amount').value = amount;
+                document.getElementById('paymentCustomerEmail').value = customerEmail;
+                
             } catch (error) {
                 console.error('Order creation error:', error);
-                displayResult('orderResult', { success: false, error: error.message }, true);
+                displayResult('orderResult', { 
+                    success: false, 
+                    error: error.message || 'Failed to create order',
+                    details: error.details || error
+                }, true);
             }
         }
 

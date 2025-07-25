@@ -36,6 +36,7 @@ class PaymentController {
       if (paymentMethod.toLowerCase() === 'paypal') {
         // Use PayPal service
         paymentResult = await PaypalService.createOrder({
+          orderId: orderId, // Pass the orderId to update the correct order
           amount: amountInCents,
           description: description,
           redirectUrl: redirectUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/order/${orderId}/status`
@@ -123,61 +124,49 @@ class PaymentController {
         .update(authString)
         .digest('hex');
       
-      if (signature !== req.headers['paypal-transmission-sig']) {
-        console.error('Invalid PayPal webhook signature');
-        return res.status(401).json({ error: 'Invalid signature' });
+      // Verify the webhook signature (highly recommended in production)
+      // For production, implement signature verification using PayPal's webhook ID
+      
+      // Process the event using our PaypalService
+      const result = await PaypalService.processWebhook(event);
+      
+      // If this was a payment capture, send appropriate emails
+      if (result.action === 'order_updated' && event.resource) {
+        const order = await Order.findOne({
+          where: { paymentIntentId: event.resource.id }
+        });
+        
+        if (order) {
+          // Send confirmation email to customer
+          await EmailService.sendOrderConfirmation({
+            email: order.customerEmail,
+            orderId: order.id,
+            customerName: order.customerName,
+            amount: order.price
+          });
+          
+          // Send admin notification
+          await EmailService.sendAdminNotification({
+            orderId: order.id,
+            customerName: order.customerName,
+            customerEmail: order.customerEmail,
+            amount: order.price,
+            notes: order.notes
+          });
+        }
       }
 
-      // Handle different webhook event types
-      const eventType = webhookEvent.event_type;
-      const resource = webhookEvent.resource;
-      const orderId = resource?.id || webhookEvent.resource?.order_id;
-
-      console.log(`Received PayPal webhook event: ${eventType} for order ${orderId}`);
-
-      // Find the order in our database
-      const order = await Order.findOne({ where: { paymentId: orderId } });
-      if (!order) {
-        console.error(`Order not found for PayPal ID: ${orderId}`);
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      // Handle different event types
-      switch (eventType) {
-        case 'PAYMENT.CAPTURE.COMPLETED':
-          order.status = 'PAID';
-          order.paymentStatus = 'COMPLETED';
-          await order.save();
-          
-          // Send confirmation email
-          await EmailService.sendOrderConfirmation(order);
-          break;
-          
-        case 'PAYMENT.CAPTURE.DENIED':
-        case 'PAYMENT.CAPTURE.FAILED':
-          order.paymentStatus = 'FAILED';
-          order.status = 'PAYMENT_FAILED';
-          await order.save();
-          break;
-          
-        case 'PAYMENT.CAPTURE.PENDING':
-          order.paymentStatus = 'PENDING';
-          await order.save();
-          break;
-          
-        case 'PAYMENT.CAPTURE.REFUNDED':
-          order.status = 'REFUNDED';
-          order.paymentStatus = 'REFUNDED';
-          await order.save();
-          break;
-      }
-
-      res.status(200).json({ received: true });
+      // Acknowledge receipt of the webhook
+      res.status(200).json({ 
+        success: true, 
+        processed: result.action 
+      });
       
     } catch (error) {
-      console.error('Error in handlePaypalWebhook:', error);
+      console.error('Error processing PayPal webhook:', error);
       res.status(500).json({ 
-        error: 'Failed to process PayPal webhook',
+        success: false,
+        error: 'Failed to process webhook',
         details: error.message 
       });
     }

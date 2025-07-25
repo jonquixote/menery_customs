@@ -1,5 +1,7 @@
 const { User, Order } = require('../models');
 const S3Service = require('../services/s3Service');
+const emailService = require('../services/emailService');
+const { v4: uuidv4 } = require('uuid');
 
 class OrderController {
   static async initiateUpload(req, res) {
@@ -44,53 +46,183 @@ class OrderController {
 
   static async createOrder(req, res) {
     try {
+      console.log('=== REQUEST HEADERS ===', req.headers);
+      console.log('=== REQUEST BODY ===', JSON.stringify(req.body, null, 2));
+      
+      // Log raw body for debugging
+      if (req.rawBody) {
+        console.log('=== RAW REQUEST BODY ===', req.rawBody.toString('utf8'));
+      }
+      
       const {
-        firstName,
-        lastName,
+        name,
         email,
-        phone,
-        price,
+        phone = '',
+        notes = '',
         duration,
-        script,
-        originalVideoKey,
-        paymentMethod,
-        paymentIntentId
+        amount,
+        paymentMethod = 'paypal',
+        videoKey = '', // Allow passing an existing S3 key
+        isTest = true, // Default to test mode for now
+        orderCustomerEmail // Check for alternate email field name
       } = req.body;
-
-      // Validate required fields
-      if (!firstName || !lastName || !email || !price || !duration || 
-          !originalVideoKey || !paymentMethod || !paymentIntentId) {
+      
+      // Use orderCustomerEmail if email is not present
+      const customerEmail = email || orderCustomerEmail;
+      
+      console.log('Parsed email from request:', customerEmail);
+      
+      if (!customerEmail) {
+        console.error('No email found in request. Available fields:', Object.keys(req.body));
         return res.status(400).json({ 
-          error: 'Missing required fields' 
+          error: 'Email is required. Please provide an email address.' 
         });
       }
 
-      // Create or find user
-      const [user] = await User.findOrCreate({
-        where: { email },
-        defaults: {
-          firstName,
-          lastName,
-          email,
-          phone
-        }
-      });
+      let videoFile = req.files?.video;
+      let s3Key;
 
-      // Create order
+      // Handle case where we have a direct file upload
+      if (videoFile) {
+        // Validate video file
+        const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/webm'];
+        if (!allowedTypes.includes(videoFile.mimetype)) {
+          return res.status(400).json({
+            error: 'Invalid file type. Only MP4, AVI, MOV, and WebM videos are allowed.'
+          });
+        }
+        
+        // Upload the new file to S3
+        const s3UploadResult = await S3Service.uploadFile(videoFile);
+        s3Key = s3UploadResult.key;
+      } 
+      // Handle case where we have an existing S3 key
+      else if (videoKey) {
+        // Verify the key exists in S3
+        const keyExists = await S3Service.keyExists(videoKey);
+        if (!keyExists) {
+          return res.status(400).json({ 
+            error: 'The specified video key does not exist in storage' 
+          });
+        }
+        s3Key = videoKey;
+      } 
+      // No video provided
+      else {
+        return res.status(400).json({ 
+          error: 'No video file provided. Either upload a file or provide a valid video key.' 
+        });
+      }
+
+      // Validate required fields
+      if (!name || !duration || !amount) {
+        console.error('Missing required fields. Received:', { name, duration, amount, customerEmail });
+        return res.status(400).json({ 
+          error: 'Missing required fields. Please provide name, duration, and amount.' 
+        });
+      }
+
+      // At this point, s3Key contains either the newly uploaded file's key or the existing key
+      if (!s3Key) {
+        throw new Error('Failed to process video - no valid key available');
+      }
+
+      // Find or create a test user for test orders
+      let user;
+      if (isTest) {
+        // Try to find an existing test user with the provided email
+        user = await User.findOne({
+          where: { email: customerEmail }
+        });
+
+        // If no user exists with this email, create one
+        if (!user) {
+          user = await User.create({
+            email: customerEmail,
+            firstName: name.split(' ')[0] || 'Test',
+            lastName: name.split(' ').slice(1).join(' ') || 'User',
+            phone: phone || '+15555555555',
+            password: uuidv4(), // Random password for test user
+            isTest: true
+          });
+        }
+      } else {
+        // In production, you'd want to use the authenticated user
+        user = await User.findOne({
+          where: { email: customerEmail }
+        });
+
+        if (!user) {
+          return res.status(400).json({ 
+            error: 'User not found. Please sign up first.' 
+          });
+        }
+      }
+
+      // Create order in database
       const order = await Order.create({
-        userId: user.id,
+        customerName: name,
+        customerEmail: customerEmail,
+        customerPhone: phone,
         status: 'pending',
-        price,
-        duration,
-        script,
-        originalVideoKey,
-        paymentMethod,
-        paymentIntentId
+        price: parseFloat(amount) || 0,
+        duration: parseInt(duration) || 0,
+        paymentStatus: 'pending',
+        paymentMethod: paymentMethod,
+        paymentIntentId: `paypal_${Date.now()}`,
+        originalVideoKey: s3Key,
+        finalVideoKey: '',
+        notes: notes,
+        userId: user.id  // Associate with the user
       });
+      
+      // Ensure we have the email before proceeding
+      if (!order.customerEmail) {
+        console.error('No customer email found in order:', order);
+        throw new Error('Customer email is required');
+      }
+
+      // Send confirmation emails (async)
+      try {
+        console.log('Preparing to send order confirmation emails...');
+        console.log('Customer email:', order.customerEmail);
+        console.log('Order ID:', order.id);
+        
+        const emailResult = await emailService.sendOrderConfirmation({
+          customerEmail: order.customerEmail,
+          customerName: order.customerName,
+          orderId: order.id,
+          amount: order.price,
+          duration: order.duration,
+          originalVideoKey: order.originalVideoKey
+        });
+        
+        if (emailResult.success) {
+          console.log('Order confirmation emails sent successfully:', {
+            messageId: emailResult.messageId,
+            accepted: emailResult.accepted,
+            rejected: emailResult.rejected
+          });
+        } else {
+          console.error('Failed to send order confirmation emails:', {
+            error: emailResult.error,
+            details: emailResult.details
+          });
+        }
+      } catch (emailError) {
+        console.error('Unexpected error in order confirmation email process:', {
+          error: emailError.message,
+          stack: emailError.stack,
+          details: emailError.details || 'No additional details'
+        });
+        // Don't fail the request if email sending fails
+      }
 
       res.status(201).json({
+        success: true,
         orderId: order.id,
-        message: 'Order created successfully'
+        message: 'Order created successfully',
+        paymentRequired: true
       });
 
     } catch (error) {

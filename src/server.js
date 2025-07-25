@@ -39,10 +39,7 @@ app.use(limiter);
 
 // Webhook handlers must be defined before other body-parsing middleware
 // to use a raw body parser for signature verification.
-app.post('/api/webhooks/square', 
-  express.raw({ type: 'application/json' }), 
-  require('./controllers/webhookController').handleSquareWebhook
-);
+app.use('/api/webhooks', require('./routes/webhooks'));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -54,6 +51,11 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/square', require('./routes/square'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/uploads'));
+
+// Test routes - only in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/test', require('./routes/test'));
+}
 
 // Serve static files from the 'public' folder. This should come after API routes.
 app.use(express.static(path.join(__dirname, '../public')));

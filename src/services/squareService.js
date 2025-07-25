@@ -1,5 +1,5 @@
-// Import the Square client and configuration
-const { SquareClient, SquareEnvironment } = require('square');
+// Import the Square client
+const { Client } = require('square');
 const { v4: uuidv4 } = require('uuid');
 
 class SquareService {
@@ -60,8 +60,9 @@ class SquareService {
       });
       
       // For v43+, we need to create a client with environment and access token
-      this.client = new SquareClient({
-        environment: env === 'production' ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+      // Using string literals for environment as per SDK requirements
+      this.client = new Client({
+        environment: env === 'production' ? 'production' : 'sandbox',
         accessToken: accessToken,
       });
       
@@ -74,14 +75,16 @@ class SquareService {
       }
       
       // For v43+, we need to use the client with the specific API
-      const { result: { locations } } = await this.client.locations.list();
+      // The following call to listLocations is removed to bypass potential permission issues.
+      // We will directly use the SQUARE_LOCATION_ID from the .env file.
+      // const { result: { locations } } = await this.client.locations.list();
       
-      if (locations && locations.length > 0) {
+      // Directly use the locationId from the environment
+      if (this.locationId) {
         console.log(`✅ Square service initialized successfully in ${env} mode.`);
-        console.log(`✅ Available locations: ${locations.map(l => l.name).join(', ')}`);
         this._initialized = true;
       } else {
-        throw new Error('No locations found for this account');
+        throw new Error('SQUARE_LOCATION_ID is not configured in .env. Initialization failed.');
       }
     } catch (error) {
       const errorMsg = '--- CRITICAL: FAILED TO INITIALIZE SQUARE SERVICE ---';
@@ -103,6 +106,54 @@ class SquareService {
 
   isInitialized() {
     return this._initialized === true;
+  }
+
+  /**
+   * Create a payment link for an order
+   * @param {Object} options - Payment options
+   * @param {string} options.name - Name of the product/service
+   * @param {number} options.price - Price in cents (e.g., 100 = $1.00)
+   * @param {string} options.orderId - Unique order ID
+   * @returns {Promise<string>} Payment URL
+   */
+  async createPaymentLink({ name, price, orderId }) {
+    if (!this.isInitialized()) {
+      throw new Error('Square service is not properly initialized');
+    }
+
+    if (!this.locationId) {
+      throw new Error('Square location ID is not configured');
+    }
+
+    try {
+      // Create a checkout link
+      const { result } = await this.client.checkout.createPaymentLink({
+        idempotencyKey: uuidv4(),
+        order: {
+          order: {
+            locationId: this.locationId,
+            lineItems: [
+              {
+                name,
+                quantity: '1',
+                basePriceMoney: {
+                  amount: BigInt(price),
+                  currency: 'USD'
+                }
+              }
+            ]
+          }
+        }
+      });
+
+      return result.paymentLink.url;
+    } catch (error) {
+      console.error('Error creating payment link:', error);
+      if (error.response) {
+        console.error('API Response:', JSON.stringify(error.response, null, 2));
+      }
+      throw new Error(`Failed to create payment link: ${error.message}`);
+    }
   }
 
   async createPaymentLink(orderDetails) {

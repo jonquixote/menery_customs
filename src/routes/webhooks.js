@@ -1,12 +1,12 @@
 const express = require('express');
-const WebhookController = require('../controllers/webhookController');
+const PaymentController = require('../controllers/paymentController');
 
 const router = express.Router();
 
-// Middleware to capture raw body for webhook signature verification
-router.use('/stripe', express.raw({ type: 'application/json' }));
-
-// POST /api/webhooks/stripe
-router.post('/stripe', WebhookController.handleStripeWebhook);
+// PayPal Webhook endpoint - Note: PayPal sends JSON, not form-urlencoded
+router.post('/paypal', express.json({ verify: (req, res, buf) => {
+  // Store the raw body for signature verification
+  req.rawBody = buf.toString();
+}}), PaymentController.handlePaypalWebhook);
 
 module.exports = router;

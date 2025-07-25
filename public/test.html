@@ -84,20 +84,36 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
-                        <input type="text" id="paymentOrderId" class="w-full p-2 border rounded">
+                        <input type="text" id="paymentOrderId" class="w-full p-2 border rounded" placeholder="Leave empty to generate new">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (cents)</label>
-                        <input type="number" id="amount" value="1000" class="w-full p-2 border rounded">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
+                        <input type="number" id="amount" value="19.99" step="0.01" min="0.01" class="w-full p-2 border rounded">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Customer Email</label>
                         <input type="email" id="paymentCustomerEmail" value="test@example.com" class="w-full p-2 border rounded">
                     </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" id="paymentDescription" value="Voiceover Order" class="w-full p-2 border rounded">
+                    </div>
                 </div>
-                <button id="createPaymentLink" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                    Create Payment Link
-                </button>
+                
+                <div class="flex flex-wrap gap-4 mb-4">
+                    <button id="createPayPalPayment" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-9v6h2v-6H9zm0 8v2h2v-2H9z"/>
+                        </svg>
+                        Pay with PayPal
+                    </button>
+                    <button id="createSquarePayment" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                        </svg>
+                        Pay with Square
+                    </button>
+                </div>
                 <div id="paymentResult" class="test-result mt-4"></div>
                 <div id="paymentStatus" class="test-result mt-4 hidden"></div>
             </div>
@@ -225,41 +241,85 @@
         // API base URL
         const API_BASE_URL = '/api';
         
-        // Initialize UI
+        // Initialize payment buttons
+        function initPaymentButtons() {
+            // PayPal button
+            const paypalButton = document.getElementById('createPayPalPayment');
+            if (paypalButton) {
+                paypalButton.addEventListener('click', () => handleCreatePaymentLink('paypal'));
+            }
+            
+            // Square button
+            const squareButton = document.getElementById('createSquarePayment');
+            if (squareButton) {
+                squareButton.addEventListener('click', () => handleCreatePaymentLink('square'));
+            }
+            
+            // Legacy payment button (for backward compatibility)
+            const legacyButton = document.getElementById('createPaymentLink');
+            if (legacyButton) {
+                legacyButton.addEventListener('click', () => handleCreatePaymentLink('square'));
+            }
+        }
+
+        // Initialize event listeners when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            // Set up tab switching
+            // Tab switching
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active', 'bg-blue-600', 'text-white'));
+                    // Remove active class from all buttons and content
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
                     
-                    button.classList.add('active', 'bg-blue-600', 'text-white');
-                    document.getElementById(button.dataset.tab).classList.add('active');
+                    // Add active class to clicked button and corresponding content
+                    button.classList.add('active');
+                    const tabId = button.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
                 });
             });
-
-            // --- Event Listeners ---
-            document.getElementById('initiateUpload').addEventListener('click', handleUpload);
-            document.getElementById('createOrder').addEventListener('click', handleCreateOrder);
-            document.getElementById('createPaymentLink').addEventListener('click', handleCreatePaymentLink);
             
-            // Admin Tab Listeners
-            document.getElementById('listAllOrders').addEventListener('click', () => fetchOrders());
-            document.getElementById('listPendingOrders').addEventListener('click', () => fetchOrders('pending'));
-            document.getElementById('listProcessingOrders').addEventListener('click', () => fetchOrders('processing'));
-            document.getElementById('getOrderDetails').addEventListener('click', fetchOrderDetails);
-            document.getElementById('updateStatus').addEventListener('click', () => updateOrderStatus(false));
-            document.getElementById('completeOrder').addEventListener('click', () => updateOrderStatus(true));
-            document.getElementById('sendNotification').addEventListener('click', sendNotification);
-            document.getElementById('notificationType').addEventListener('change', (e) => {
-                document.getElementById('notificationMessage').classList.toggle('hidden', e.target.value !== 'custom');
-            });
-
-            // Webhook Tab Listeners
-            document.getElementById('testWebhookSuccess').addEventListener('click', () => testWebhook('success'));
-            document.getElementById('testWebhookFailure').addEventListener('click', () => testWebhook('failure'));
+            // Initialize file upload handler
+            document.getElementById('initiateUpload')?.addEventListener('click', handleUpload);
+            
+            // Initialize order creation handler
+            document.getElementById('createOrder')?.addEventListener('click', handleCreateOrder);
+            
+            // Initialize payment buttons
+            initPaymentButtons();
+            
+            // Initialize admin section
+            document.getElementById('fetchOrders')?.addEventListener('click', () => fetchOrders());
+            document.getElementById('fetchPendingOrders')?.addEventListener('click', () => fetchOrders('pending'));
+            document.getElementById('fetchCompletedOrders')?.addEventListener('click', () => fetchOrders('completed'));
+            document.getElementById('getOrderDetails')?.addEventListener('click', fetchOrderDetails);
+            document.getElementById('markComplete')?.addEventListener('click', () => updateOrderStatus(true));
+            document.getElementById('markIncomplete')?.addEventListener('click', () => updateOrderStatus(false));
+            document.getElementById('sendNotificationBtn')?.addEventListener('click', sendNotification);
+            
+            // Initialize webhook test buttons
+            document.getElementById('testSquareWebhook')?.addEventListener('click', () => testWebhook('square'));
+            document.getElementById('testStripeWebhook')?.addEventListener('click', () => testWebhook('stripe'));
+            
+            // Check auth status
+            checkAuthStatus();
+            
+            // Auto-generate a test order ID if empty
+            const orderIdInput = document.getElementById('paymentOrderId');
+            if (orderIdInput && !orderIdInput.value) {
+                orderIdInput.value = `test-order-${Date.now()}`;
+            }
         });
         
+        // --- Authentication ---
+        function checkAuthStatus() {
+            // This is a placeholder - in a real app, you would check auth status
+            // For testing purposes, we'll just log that we're checking auth
+            console.log('Checking auth status...');
+            // You would typically check for a token in localStorage or a cookie
+            const token = localStorage.getItem('authToken');
+            return !!token;
+        }
+
         // --- Helper Functions ---
         function displayResult(containerId, data, isError = false) {
             const container = document.getElementById(containerId);
@@ -340,29 +400,55 @@
             }
         }
 
-        async function handleCreatePaymentLink() {
+        async function handleCreatePaymentLink(paymentMethod = 'square') {
             const orderId = document.getElementById('paymentOrderId').value || `test-order-${Date.now()}`;
-            const amount = parseInt(document.getElementById('amount').value) || 1000;
+            const amount = document.getElementById('amount').value;
             const customerEmail = document.getElementById('paymentCustomerEmail').value;
+            const description = document.getElementById('paymentDescription').value;
+            
+            if (!amount || !customerEmail) {
+                displayResult('paymentResult', { error: 'Amount and customer email are required' }, true);
+                return;
+            }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/payments/create-link`, {
+                const response = await fetch(`${API_BASE_URL}/payments/create-payment-link`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId, amount, customerEmail, customerName: 'Test Customer', description: 'Test payment', redirectUrl: window.location.href })
+                    body: JSON.stringify({
+                        orderId,
+                        amount: paymentMethod === 'square' ? Math.round(parseFloat(amount) * 100) : amount,
+                        customerEmail,
+                        paymentMethod,
+                        description,
+                        customerName: 'Test Customer',
+                        redirectUrl: `${window.location.origin}/order/status`
+                    })
                 });
 
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Failed to create payment link');
-
-                displayResult('paymentResult', data);
-                if (data.paymentUrl) {
-                    window.open(data.paymentUrl, '_blank');
-                    if (data.paymentId) pollPaymentStatus(data.paymentId);
+                if (response.ok) {
+                    displayResult('paymentResult', data);
+                    if (data.paymentUrl) {
+                        // For PayPal, we'll use their button, for Square we'll redirect
+                        if (paymentMethod === 'square') {
+                            window.open(data.paymentUrl, '_blank');
+                        } else if (paymentMethod === 'paypal' && data.paypalRedirectUrl) {
+                            // Show PayPal button or redirect
+                            window.open(data.paypalRedirectUrl, '_blank');
+                        }
+                        
+                        // Start polling for payment status
+                        if (data.paymentId) {
+                            pollPaymentStatus(data.paymentId, paymentMethod);
+                        }
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to create payment link');
                 }
             } catch (error) {
-                console.error('Payment error:', error);
-                displayResult('paymentResult', { success: false, error: error.message }, true);
+                console.error('Error creating payment link:', error);
+                displayResult('paymentResult', { error: error.message }, true);
             }
         }
 

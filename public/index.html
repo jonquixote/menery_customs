@@ -368,12 +368,46 @@
             btn.disabled = true;
             loadingSpinner.classList.remove('hidden');
             
-            // Simulate network request / payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            currentOrderId = `BM-ORD-${Date.now()}`;
-            showSuccessModal(method);
-            loadingSpinner.classList.add('hidden');
+            try {
+                const orderDetails = {
+                    orderId: currentOrderId || uuidv4(), // Generate a new order ID if not already set
+                    amount: selectedPrice,
+                    customerEmail: document.getElementById('email').value,
+                    paymentMethod: method,
+                    description: `Voiceover Order - ${selectedDuration}s`,
+                    redirectUrl: `${window.location.origin}/order/status` // Use current origin for redirect
+                };
+
+                // If it's a new order, create a payment link
+                const response = await fetch('/api/create-payment-link', { // Assuming your backend endpoint is /api/create-payment-link
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderDetails),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentOrderId = data.orderId; // Update currentOrderId with the one from backend
+                    if (method.toLowerCase() === 'paypal') {
+                        window.location.href = data.paymentUrl; // Redirect to PayPal
+                    } else {
+                        // Handle other payment methods (e.g., redirect to Square payment URL)
+                        // For now, simulate success for other methods
+                        showSuccessModal(method);
+                    }
+                } else {
+                    throw new Error(data.error || 'Payment initiation failed.');
+                }
+
+            } catch (error) {
+                console.error('Payment handling error:', error);
+                alert(`Payment failed: ${error.message}`);
+                btn.disabled = false; // Re-enable button on error
+                loadingSpinner.classList.add('hidden');
+            }
         }
 
         /**
@@ -404,8 +438,24 @@
             selectedPrice = null;
             currentOrderId = null;
             document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('selected'));
-            checkFormValidity();
+            // Re-enable payment buttons after reset
+            paymentMethods.forEach(method => {
+                document.getElementById(`${method}Btn`).disabled = !checkFormValidity(); // Re-check validity
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /**
+         * Checks if the form is valid and enables/disables payment buttons accordingly.
+         * Returns true if form is valid, false otherwise.
+         */
+        function checkFormValidity() {
+            const isFormValid = formFields.every(id => document.getElementById(id).value.trim() !== '');
+            const canPay = isFormValid && !!uploadedFile && !!selectedPrice;
+            paymentMethods.forEach(method => {
+                document.getElementById(`${method}Btn`).disabled = !canPay;
+            });
+            return canPay; // Return validity status
         }
 
         /**

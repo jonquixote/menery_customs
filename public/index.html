@@ -210,7 +210,7 @@
                     <div class="video-preview-container hidden" id="videoPreviewContainer">
                         <div class="flex justify-between items-center bg-black/20 p-3 rounded-t-lg">
                             <h3 class="text-lg font-semibold text-green-400"><i class="fas fa-check-circle mr-2"></i>Upload Complete</h3>
-                            <button type="button" class="text-red-500 hover:text-red-400 text-lg flex items-center gap-2" onclick="removeFile()"><i class="fas fa-times-circle"></i>Remove</button>
+                            <button type="button" id="removeFileBtn" class="text-red-500 hover:text-red-400 text-lg flex items-center gap-2"><i class="fas fa-times-circle"></i>Remove</button>
                         </div>
                         <video id="videoPreview" controls class="w-full max-h-96 rounded-b-lg border border-t-0 border-glass-border"></video>
                     </div>
@@ -266,295 +266,247 @@
     </div>
 
     <script>
-        // --- State Variables ---
-        let selectedDuration = null;
-        let selectedPrice = null;
-        let uploadedFile = null;
-        let currentOrderId = null;
-        let videoObjectURL = null;
-        const paymentMethods = ['paypal']; // Only PayPal payment method now
-
-        // --- DOM Element References ---
-        const fileInput = document.getElementById('videoFile');
-        const uploadArea = document.getElementById('fileUploadArea');
-        const videoPreview = document.getElementById('videoPreview');
-        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
-        const orderForm = document.getElementById('orderForm');
-        const successModal = document.getElementById('successModal');
-        const paypalBtn = document.getElementById('paypalBtn');
-        const removeFileBtn = document.querySelector('#videoPreviewContainer button');
-        const startNewOrderBtn = document.getElementById('startNewOrderBtn');
-        const pricingCards = document.querySelectorAll('.pricing-card');
-        const formFields = ['firstName', 'lastName', 'email', 'phone', 'script'];
-
-        /**
-         * Sets up all event listeners for the file upload area (drag & drop, click).
-         */
-        function setupFileUpload() {
-            ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadArea.classList.toggle('border-primary-gold', eventName === 'dragover');
-                });
-            });
-            uploadArea.addEventListener('drop', e => handleFileSelect(e.dataTransfer.files[0]));
-            uploadArea.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', e => handleFileSelect(e.target.files[0]));
-        }
-
-        /**
-         * Handles the logic for when a video file is selected.
-         * @param {File} file The selected video file.
-         */
-        function handleFileSelect(file) {
-            if (!file || !file.type.startsWith('video/')) {
-                // Using a custom modal/alert in a real app would be better than window.alert
-                alert('Error: Please select a valid video file.');
-                return;
-            }
-            if (file.size > 500 * 1024 * 1024) { // 500MB limit
-                alert('Error: File size exceeds the 500MB limit.');
-                return;
-            }
-            uploadedFile = file;
-            videoObjectURL = URL.createObjectURL(file);
-            videoPreview.src = videoObjectURL;
-            uploadArea.classList.add('hidden');
-            videoPreviewContainer.classList.remove('hidden');
-            checkFormValidity();
-        }
-
-        /**
-         * Removes the currently uploaded file and resets the UI.
-         */
-        function removeFile() {
-            uploadedFile = null;
-            if (videoObjectURL) {
-                URL.revokeObjectURL(videoObjectURL);
-                videoObjectURL = null;
-            }
-            fileInput.value = ''; // Reset the file input
-            videoPreview.src = '';
-            uploadArea.classList.remove('hidden');
-            videoPreviewContainer.classList.add('hidden');
-            checkFormValidity();
-        }
-
-        /**
-         * Handles the selection of a pricing package.
-         * @param {HTMLElement} card The clicked pricing card element.
-         */
-        function selectPricing(card) {
-            document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedDuration = card.dataset.duration;
-            selectedPrice = card.dataset.price;
-            checkFormValidity();
-        }
-
-        /**
-         * Checks if the form is valid and enables/disables payment buttons accordingly.
-         */
-        function checkFormValidity() {
-            try {
-                if (!paypalBtn) {
-                    console.error('PayPal button not found');
-                    return false;
-                }
-                
-                // Check each form field
-                const fieldChecks = formFields.map(id => {
-                    const element = document.getElementById(id);
-                    if (!element) {
-                        console.warn(`Form field with ID '${id}' not found`);
-                        return { id, exists: false, filled: false };
-                    }
-                    const value = element.value ? element.value.trim() : '';
-                    return { id, exists: true, filled: value !== '' };
-                });
-                
-                const isFormValid = fieldChecks.every(f => f.exists && f.filled);
-                const hasFile = !!uploadedFile;
-                const hasPrice = !!selectedPrice;
-                const canPay = isFormValid && hasFile && hasPrice;
-                
-                // Debug logs
-                console.group('Form Validation');
-                console.log('Form Fields:', fieldChecks);
-                console.log('Has Uploaded File:', hasFile);
-                console.log('Selected Price:', selectedPrice);
-                console.log('Is Form Valid:', isFormValid);
-                console.log('Can Pay:', canPay);
-                console.groupEnd();
-                
-                // Only update the button state if it exists
-                paypalBtn.disabled = !canPay;
-                return canPay;
-                
-            } catch (error) {
-                console.error('Error in checkFormValidity:', error);
-                if (paypalBtn) {
-                    paypalBtn.disabled = true;
-                }
-                return false;
-            }
-        }
-
-        /**
-         * Simulates a payment process.
-         * @param {string} method The selected payment method.
-         */
-        async function handlePayment(method) {
-            const btn = paypalBtn;
-            const loadingSpinner = btn.querySelector('.loading');
-            
-            btn.disabled = true;
-            loadingSpinner.classList.remove('hidden');
-            
-            try {
-                // First, validate the form
-                if (!checkFormValidity()) {
-                    throw new Error('Please fill in all required fields and upload your video.');
-                }
-
-                // Create form data for file upload
-                const formData = new FormData();
-                formData.append('video', uploadedFile);
-                formData.append('email', document.getElementById('email').value);
-                // Combine firstName and lastName for the 'name' field
-                const firstName = document.getElementById('firstName').value;
-                const lastName = document.getElementById('lastName').value;
-                formData.append('name', `${firstName} ${lastName}`);
-                formData.append('phone', document.getElementById('phone').value);
-                // Use the correct ID for the script textarea
-                formData.append('notes', document.getElementById('script').value);
-                formData.append('duration', selectedDuration);
-                formData.append('amount', selectedPrice);
-                formData.append('paymentMethod', 'paypal');
-                
-                // First, upload the video and create the order
-                const uploadResponse = await fetch('/api/orders', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!uploadResponse.ok) {
-                    const error = await uploadResponse.json();
-                    throw new Error(error.message || 'Failed to create order');
-                }
-                
-                const orderData = await uploadResponse.json();
-                currentOrderId = orderData.orderId;
-
-                // Then create the payment link
-                const paymentResponse = await fetch('/api/payments/create-payment-link', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        orderId: currentOrderId,
-                        amount: selectedPrice,
-                        customerEmail: document.getElementById('email').value,
-                        // Use the combined name for customerName
-                        customerName: `${firstName} ${lastName}`,
-                        description: `Voiceover Order - ${selectedDuration}s`,
-                        paymentMethod: 'paypal',
-                        redirectUrl: `${window.location.origin}/order/status`
-                    })
-                });
-
-                const paymentData = await paymentResponse.json();
-
-                if (paymentData.success) {
-                    // Redirect to PayPal
-                    window.location.href = paymentData.paymentUrl || paymentData.paypalRedirectUrl;
-                } else {
-                    throw new Error(paymentData.error || 'Payment initiation failed');
-                }
-
-            } catch (error) {
-                console.error('Payment handling error:', error);
-                alert(`Payment failed: ${error.message}`);
-                btn.disabled = false;
-                loadingSpinner.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Displays the success modal with order details.
-         * @param {string} paymentMethod The method used for payment.
-         */
-        function showSuccessModal(paymentMethod) {
-            document.getElementById('orderId').textContent = currentOrderId;
-            document.getElementById('orderPaymentMethod').textContent = paymentMethod;
-            successModal.classList.remove('hidden');
-        }
-
-        /**
-         * Handles the selection of a pricing package.
-         * @param {HTMLElement} card The clicked pricing card element.
-         */
-        function selectPricing(card) {
-            document.querySelectorAll('.pricing-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedDuration = card.dataset.duration;
-            selectedPrice = card.dataset.price;
-            checkFormValidity();
-        }
-
-        /**
-         * Sets up Intersection Observer for scroll animations.
-         */
-        function setupScrollAnimations() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                    }
-                });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
-        }
-
-        // --- Initial Setup ---
         document.addEventListener('DOMContentLoaded', () => {
-            // DOM Elements
-            const form = document.getElementById('orderForm');
+            // --- State Variables ---
+            let selectedDuration = null;
+            let selectedPrice = null;
+            let uploadedFile = null;
+            let currentOrderId = null;
+            let videoObjectURL = null;
+
+            // --- DOM Element References ---
+            const fileInput = document.getElementById('videoFile');
+            const uploadArea = document.getElementById('fileUploadArea');
+            const videoPreview = document.getElementById('videoPreview');
+            const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+            const successModal = document.getElementById('successModal');
             const paypalBtn = document.getElementById('paypalBtn');
             const removeFileBtn = document.getElementById('removeFileBtn');
             const startNewOrderBtn = document.getElementById('startNewOrderBtn');
-            const fileInput = document.getElementById('fileInput');
-            const fileNameDisplay = document.getElementById('fileName');
-            const uploadArea = document.getElementById('uploadArea');
             const pricingCards = document.querySelectorAll('.pricing-card');
+            const requiredFormFields = ['firstName', 'lastName', 'email', 'phone'];
+
+            // --- Functions ---
+
+            function setupFileUpload() {
+                ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (eventName === 'dragover') {
+                            uploadArea.classList.add('border-primary-gold');
+                        } else {
+                            uploadArea.classList.remove('border-primary-gold');
+                        }
+                    });
+                });
+                uploadArea.addEventListener('drop', e => handleFileSelect(e.dataTransfer.files[0]));
+                uploadArea.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', e => handleFileSelect(e.target.files[0]));
+            }
+
+            function handleFileSelect(file) {
+                if (!file || !file.type.startsWith('video/')) {
+                    alert('Error: Please select a valid video file.');
+                    return;
+                }
+                if (file.size > 500 * 1024 * 1024) { // 500MB limit
+                    alert('Error: File size exceeds the 500MB limit.');
+                    return;
+                }
+                uploadedFile = file;
+                videoObjectURL = URL.createObjectURL(file);
+                videoPreview.src = videoObjectURL;
+                uploadArea.classList.add('hidden');
+                videoPreviewContainer.classList.remove('hidden');
+                checkFormValidity();
+            }
+
+            function removeFile() {
+                uploadedFile = null;
+                if (videoObjectURL) {
+                    URL.revokeObjectURL(videoObjectURL);
+                    videoObjectURL = null;
+                }
+                fileInput.value = '';
+                videoPreview.src = '';
+                uploadArea.classList.remove('hidden');
+                videoPreviewContainer.classList.add('hidden');
+                checkFormValidity();
+            }
+
+            function selectPricing(card) {
+                pricingCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedDuration = card.dataset.duration;
+                selectedPrice = card.dataset.price;
+                checkFormValidity();
+            }
+
+            function checkFormValidity() {
+                const isFormValid = requiredFormFields.every(id => {
+                    const element = document.getElementById(id);
+                    return element && element.value.trim() !== '';
+                });
+                const hasFile = !!uploadedFile;
+                const hasPrice = !!selectedPrice;
+                const canPay = isFormValid && hasFile && hasPrice;
+                paypalBtn.disabled = !canPay;
+                return canPay;
+            }
+
+            async function handlePayment() {
+                const btn = paypalBtn;
+                const loadingSpinner = btn.querySelector('.loading');
+                
+                btn.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+                
+                try {
+                    if (!checkFormValidity()) {
+                        throw new Error('Please fill in all required fields, upload your video, and select a package.');
+                    }
+
+                    // 1. Initiate Upload
+                    const presignedResponse = await fetch('/api/upload/initiate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: uploadedFile.name,
+                            fileType: uploadedFile.type,
+                            fileSize: uploadedFile.size,
+                            duration: parseInt(selectedDuration, 10)
+                        })
+                    });
+                    if (!presignedResponse.ok) {
+                        const error = await presignedResponse.json();
+                        throw new Error(error.error || 'Failed to get presigned URL');
+                    }
+                    const { uploadUrl, key } = await presignedResponse.json();
+
+                    // 2. Upload file to S3
+                    const uploadResponse = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': uploadedFile.type },
+                        body: uploadedFile
+                    });
+                    if (!uploadResponse.ok) throw new Error('S3 upload failed. Check CORS policy.');
+
+                    // 3. Create Order
+                    const firstName = document.getElementById('firstName').value;
+                    const lastName = document.getElementById('lastName').value;
+                    const orderPayload = {
+                        name: `${firstName} ${lastName}`,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        amount: selectedPrice,
+                        duration: parseInt(selectedDuration, 10),
+                        videoKey: key,
+                        instructions: document.getElementById('script').value || 'No special instructions',
+                        paymentMethod: 'paypal',
+                        isTest: false
+                    };
+
+                    const orderResponse = await fetch('/api/orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderPayload)
+                    });
+
+                    if (!orderResponse.ok) {
+                        const error = await orderResponse.json();
+                        throw new Error(error.error || 'Failed to create order');
+                    }
+                    const order = await orderResponse.json();
+                    currentOrderId = order.id;
+
+                    // 4. Create Payment Link
+                    const paymentResponse = await fetch('/api/payments/create-payment-link', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId: currentOrderId,
+                            amount: selectedPrice,
+                            customerEmail: document.getElementById('email').value,
+                            customerName: `${firstName} ${lastName}`,
+                            description: `Voiceover Order - ${selectedDuration}s`,
+                            paymentMethod: 'paypal',
+                            redirectUrl: `${window.location.origin}/order/status`
+                        })
+                    });
+
+                    const paymentData = await paymentResponse.json();
+                    if (paymentData.paypalRedirectUrl) {
+                        window.location.href = paymentData.paypalRedirectUrl;
+                    } else {
+                        throw new Error(paymentData.error || 'Payment initiation failed');
+                    }
+
+                } catch (error) {
+                    console.error('Payment handling error:', error);
+                    alert(`An error occurred: ${error.message}`);
+                    btn.disabled = false;
+                    loadingSpinner.classList.add('hidden');
+                }
+            }
+
+            function showSuccessModal(paymentMethod) {
+                document.getElementById('orderId').textContent = currentOrderId;
+                document.getElementById('orderPaymentMethod').textContent = paymentMethod;
+                successModal.classList.remove('hidden');
+            }
             
-            // Form field IDs for validation
-            const formFields = ['firstName', 'lastName', 'email', 'phone', 'script'];
-            
-            // State variables
-            let uploadedFile = null;
-            let selectedDuration = null;
-            let selectedPrice = null;
-            let currentOrderId = null;
+            function closeModal() {
+                successModal.classList.add('hidden');
+                window.location.href = window.location.pathname; // Reload page to clear state
+            }
+
+            function setupScrollAnimations() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                        }
+                    });
+                }, { threshold: 0.1 });
+                document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+            }
+
+            // --- Initial Setup & Event Listeners ---
             setupFileUpload();
             setupScrollAnimations();
             checkFormValidity();
-            // Add input listeners to check validity in real-time
-            formFields.forEach(id => document.getElementById(id).addEventListener('input', checkFormValidity));
 
-            // Attach event listeners for pricing cards
+            requiredFormFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', checkFormValidity);
+            });
+            
+            document.getElementById('script').addEventListener('input', checkFormValidity);
+
             pricingCards.forEach(card => {
                 card.addEventListener('click', () => selectPricing(card));
             });
 
-            // Attach event listener for PayPal button
-            paypalBtn.addEventListener('click', () => handlePayment('PayPal'));
-
-            // Attach event listener for remove file button
+            paypalBtn.addEventListener('click', handlePayment);
+            
             removeFileBtn.addEventListener('click', removeFile);
 
-            // Attach event listener for start new order button
             startNewOrderBtn.addEventListener('click', closeModal);
+            
+            // Check for payment status on page load (if redirected from PayPal)
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentId = urlParams.get('paymentId');
+            const PayerID = urlParams.get('PayerID');
+            const orderIdFromUrl = urlParams.get('orderId'); // Assuming backend might redirect with this
+
+            if (paymentId && PayerID) {
+                // A more robust solution would be to have the backend redirect with the orderId
+                // and then fetch order details to populate the modal.
+                // For now, we'll show a generic success message.
+                currentOrderId = orderIdFromUrl || 'See Confirmation Email';
+                showSuccessModal('PayPal');
+            }
         });
     </script>
 </body>

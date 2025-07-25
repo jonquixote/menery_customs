@@ -95,8 +95,7 @@ const connectDB = async () => {
     const isConnected = await testDbConnection();
     
     if (!isConnected) {
-      console.error('Failed to connect to the database');
-      process.exit(1);
+      throw new Error('Failed to connect to the database');
     }
     
     // Sync all models
@@ -104,7 +103,8 @@ const connectDB = async () => {
     console.log('Database synchronized');
   } catch (error) {
     console.error('Database synchronization error:', error);
-    process.exit(1);
+    // Re-throw the error to be handled by the serverless environment
+    throw error;
   }
 };
 

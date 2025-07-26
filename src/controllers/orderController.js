@@ -182,41 +182,7 @@ class OrderController {
         throw new Error('Customer email is required');
       }
 
-      // Send confirmation emails (async)
-      try {
-        console.log('Preparing to send order confirmation emails...');
-        console.log('Customer email:', order.customerEmail);
-        console.log('Order ID:', order.id);
-        
-        const emailResult = await emailService.sendOrderConfirmation({
-          customerEmail: order.customerEmail,
-          customerName: order.customerName,
-          orderId: order.id,
-          amount: order.price,
-          duration: order.duration,
-          originalVideoKey: order.originalVideoKey
-        });
-        
-        if (emailResult.success) {
-          console.log('Order confirmation emails sent successfully:', {
-            messageId: emailResult.messageId,
-            accepted: emailResult.accepted,
-            rejected: emailResult.rejected
-          });
-        } else {
-          console.error('Failed to send order confirmation emails:', {
-            error: emailResult.error,
-            details: emailResult.details
-          });
-        }
-      } catch (emailError) {
-        console.error('Unexpected error in order confirmation email process:', {
-          error: emailError.message,
-          stack: emailError.stack,
-          details: emailError.details || 'No additional details'
-        });
-        // Don't fail the request if email sending fails
-      }
+      // Emails will be sent after successful payment capture, not here.
 
       res.status(201).json({
         success: true,

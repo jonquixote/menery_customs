@@ -6,77 +6,6 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 
 class PaymentController {
-  static async createPaymentLink(req, res) {
-    console.log('Attempting to create payment link...'); // Added for debugging
-    try {
-      const {
-        orderId,
-        amount,
-        customerEmail,
-        paymentMethod, // Added paymentMethod
-        customerName = 'Customer',
-        description = 'Voiceover Order',
-        redirectUrl
-      } = req.body;
-
-      // Validate required fields
-      if (!orderId || amount === undefined || amount === null || !customerEmail || !paymentMethod) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-
-      // Convert amount to cents for Square, keep as decimal for PayPal
-      const amountInCents = paymentMethod.toLowerCase() === 'square' ? Math.round(parseFloat(amount) * 100) : parseFloat(amount);
-      
-      if (isNaN(amountInCents) || amountInCents <= 0) {
-        return res.status(400).json({ error: 'Invalid amount' });
-      }
-
-      let paymentResult;
-
-      if (paymentMethod.toLowerCase() === 'paypal') {
-        // Use PayPal service
-        paymentResult = await PaypalService.createOrder({
-          orderId: orderId, // Pass the orderId to update the correct order
-          amount: amountInCents,
-          description: description,
-          redirectUrl: redirectUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/order/${orderId}/status`
-        });
-        
-        res.json({
-          success: true,
-          paymentUrl: paymentResult.paypalRedirectUrl, // PayPal redirect URL
-          paymentId: paymentResult.orderId, // PayPal Order ID
-          orderId: orderId,
-          paymentMethod: 'PayPal'
-        });
-
-      } else if (paymentMethod.toLowerCase() === 'square') {
-        // Use Square service
-        paymentResult = await SquarePaymentService.createPaymentLink({
-          name: description,
-          price: amount,
-          redirectUrl: redirectUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/order/${orderId}/status`
-        });
-
-        res.json({
-          success: true,
-          paymentUrl: paymentResult.paymentUrl,
-          paymentId: paymentResult.paymentId,
-          orderId: orderId,
-          paymentMethod: 'Square'
-        });
-      } else {
-        return res.status(400).json({ error: 'Unsupported payment method' });
-      }
-
-    } catch (error) {
-      console.error('Error in createPaymentLink controller:', error);
-      res.status(500).json({ 
-        error: 'Failed to create payment link',
-        details: error.message 
-      });
-    }
-  }
 
   static async getPaymentStatus(req, res) {
     try {
@@ -224,13 +153,7 @@ class PaymentController {
         paymentStatus: paypalOrder.status || 'pending'
       });
       
-      res.json({
-        success: true,
-        orderId: order.id,
-        paypalOrderId: paypalOrder.id,
-        status: paypalOrder.status,
-        links: paypalOrder.links || []
-      });
+      res.json({ id: paypalOrder.id });
       
     } catch (error) {
       console.error('Error in createPaypalOrder:', {

@@ -11,6 +11,9 @@ const { sequelize, testDbConnection } = require('./models');
 const app = express();
 const PORT = process.env.PORT || 3001; // Default to 3001 for development
 
+// Trust the Vercel proxy
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,

@@ -1,4 +1,4 @@
-const paypal = require('@paypal/paypal-server-sdk');
+const paypal = require('@paypal/checkout-server-sdk');
 const { Order, Op } = require('../models');
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;

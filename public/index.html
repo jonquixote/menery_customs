@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bob Menery's Custom Voiceovers - Perfected Edition</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
-    <link rel="manifest" href="/favicon_io/site.webmanifest">
+    <title>Bob Menery's Custom Voiceovers - Simplified</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/favicon_io/site.webmanifest">
     <style>
         :root {
             --primary-gold: #FFD700;
@@ -23,46 +23,13 @@
             --text-primary: #F0F0F5;
             --text-secondary: #A0A0B0;
         }
-
         html { scroll-behavior: smooth; }
-
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--dark-bg);
             color: var(--text-primary);
             overflow-x: hidden;
         }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: radial-gradient(circle at 15% 25%, rgba(255, 215, 0, 0.08), transparent 40%),
-                        radial-gradient(circle at 85% 75%, rgba(0, 140, 255, 0.08), transparent 40%);
-            animation: background-pan 25s linear infinite;
-        }
-
-        @keyframes background-pan {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Removed scroll animations - all sections are now always visible */
-        .reveal-on-scroll {
-            opacity: 1;
-            transform: none;
-        }
-        
-        .reveal-on-scroll.is-visible {
-            opacity: 1;
-            transform: none;
-        }
-
         .main-title {
             font-family: 'Orbitron', monospace;
             font-weight: 900;
@@ -70,172 +37,16 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(255, 215, 0, 0.4);
-            animation: text-glow 3s ease-in-out infinite alternate;
         }
-
-        @keyframes text-glow {
-            from { filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4)); }
-            to { filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7)); }
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .form-input, .form-textarea {
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-            width: 100%; /* Ensure inputs take full width of their container */
-        }
-
-        .form-input:focus, .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary-gold);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-        }
-
-        .file-upload-area {
-            border: 2px dashed var(--glass-border);
-            border-radius: 16px;
-            padding: 3rem 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            background: rgba(255,215,0,0.02);
-        }
-        
-        .file-upload-area::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.2), transparent 40%);
-            transform: translate(-50%, -50%);
-            animation: subtle-glow 5s linear infinite;
-        }
-        
-        @keyframes subtle-glow {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        
-        .file-upload-area:hover {
-            border-color: var(--primary-gold);
-            transform: scale(1.02);
-        }
-        
         .pricing-card {
-            position: relative;
-            overflow: hidden;
             cursor: pointer;
-            transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
             border: 2px solid transparent;
         }
-        
         .pricing-card.selected {
             transform: scale(1.05);
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
             border-color: var(--primary-gold);
-        }
-
-        .payment-btn {
-            border-radius: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .payment-btn:hover:not(:disabled) {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-        }
-        
-        .loading {
-            border-top-color: #FFF;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .error-highlight {
-            border-color: #F87171 !important;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            z-index: 50;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
-            position: relative;
-        }
-
-        .modal-close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        .modal-close-btn:hover {
-            color: var(--primary-gold);
-        }
-
-        .error-message {
-            color: #e53e3e;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .form-input.error, .form-textarea.error {
-            border-color: #e53e3e;
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
         }
     </style>
 </head>
@@ -252,607 +63,82 @@
             </div>
         </div>
         <p class="text-base text-text-secondary max-w-2xl mx-auto leading-relaxed">
-            Transform your videos with Bob's iconic commentary. From epic sports highlights to hilarious everyday moments - get the voice that makes everything legendary.
+            Transform your videos with Bob's iconic commentary. Select a package to get started.
         </p>
     </header>
 
     <main class="container mx-auto px-4 py-8 space-y-12">
-        <section class="glass-card max-w-4xl mx-auto p-6 md:p-8">
-            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 1: Your Details & Video</h2>
-            <form id="orderForm" class="space-y-8">
-                <div class="grid md:grid-cols-2 gap-8">
-                    <div class="form-group text-center md:text-left"><label for="firstName" class="form-label"><i class="fas fa-user mr-2"></i>First Name</label><input type="text" id="firstName" name="firstName" class="form-input" placeholder="e.g., John" required></div>
-                    <div class="form-group text-center md:text-left"><label for="lastName" class="form-label"><i class="fas fa-user-tag mr-2"></i>Last Name</label><input type="text" id="lastName" name="lastName" class="form-input" placeholder="e.g., Doe" required></div>
-                    <div class="form-group text-center md:text-left"><label for="email" class="form-label"><i class="fas fa-envelope mr-2"></i>Email Address</label><input type="email" id="email" name="email" class="form-input" placeholder="e.g., john.doe@example.com" required></div>
-                    <div class="form-group text-center md:text-left"><label for="phone" class="form-label"><i class="fas fa-phone mr-2"></i>Phone Number</label><input type="tel" id="phone" name="phone" class="form-input" placeholder="e.g., (555) 123-4567" required></div>
-                </div>
-                <div class="form-group text-center md:text-left"><label for="script" class="form-label"><i class="fas fa-scroll mr-2"></i>Your Script (Optional)</label><textarea id="script" name="script" class="form-textarea h-32" placeholder="Enter the text you want Bob to read. If left blank, Bob will improvise."></textarea></div>
-                
-                <div class="form-group text-center md:text-left">
-                    <label class="form-label"><i class="fas fa-video mr-2"></i>Upload Your Video</label>
-                    <div class="file-upload-area" id="fileUploadArea">
-                        <div class="text-5xl text-primary-gold mb-4"><i class="fas fa-cloud-upload-alt"></i></div>
-                        <h3 class="text-2xl font-semibold mb-2">Click or Drag & Drop Video</h3>
-                        <p class="text-text-secondary">Max file size: 500MB</p>
-                        <input type="file" id="videoFile" name="videoFile" accept="video/*" class="hidden" required>
-                    </div>
-                    <div class="video-preview-container hidden" id="videoPreviewContainer">
-                        <div class="flex justify-between items-center bg-black/20 p-3 rounded-t-lg">
-                            <h3 class="text-lg font-semibold text-green-400"><i class="fas fa-check-circle mr-2"></i>Upload Complete</h3>
-                            <button type="button" id="removeFileBtn" class="text-red-500 hover:text-red-400 text-lg flex items-center gap-2"><i class="fas fa-times-circle"></i>Remove</button>
-                        </div>
-                        <video id="videoPreview" controls class="w-full max-h-96 rounded-b-lg border border-t-0 border-glass-border"></video>
-                    </div>
-                </div>
-            </form>
-        </section>
-
         <section id="packages-section" class="max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 2: Choose Your Package</h2>
+            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Choose Your Package</h2>
             <div class="grid md:grid-cols-2 gap-8">
-                <div class="pricing-card glass-card p-8" data-duration="30" data-price="200">
+                <div class="pricing-card bg-card-bg p-8 rounded-lg" data-package="30s">
                     <div class="text-2xl font-bold text-primary-gold mb-2">30 Seconds</div>
                     <div class="text-5xl font-extrabold mb-4">$200</div>
-                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400"><li>Pro quality recording</li><li>24-48 hour delivery</li></ul>
+                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400">
+                        <li>Pro quality recording</li>
+                        <li>24-48 hour delivery</li>
+                    </ul>
                 </div>
-                <div class="pricing-card glass-card p-8" data-duration="60" data-price="250">
+                <div class="pricing-card bg-card-bg p-8 rounded-lg" data-package="60s">
                     <div class="text-2xl font-bold text-primary-gold mb-2">60 Seconds</div>
                     <div class="text-5xl font-extrabold mb-4">$250</div>
-                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400"><li>Pro quality recording</li><li>24-48 hour delivery</li><li>Priority support</li></ul>
+                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400">
+                        <li>Pro quality recording</li>
+                        <li>24-48 hour delivery</li>
+                        <li>Priority support</li>
+                    </ul>
                 </div>
             </div>
         </section>
 
-        <section class="glass-card max-w-4xl mx-auto p-6 md:p-8">
-            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 3: Secure Payment</h2>
-            <div class="max-w-md mx-auto">
-                <div class="space-y-4">
-                    <button class="payment-btn w-full bg-[#0070BA] h-16 flex items-center justify-center text-lg" id="paypalBtn" disabled>
-                        <i class="fab fa-paypal text-2xl mr-3"></i>
-                        <span>Pay with PayPal</span>
-                        <div class="loading hidden ml-2"></div>
-                    </button>
-                    <button class="payment-btn w-full bg-green-600 h-16 flex items-center justify-center text-lg" id="payNowBtn" disabled>
-                        <i class="fas fa-credit-card text-2xl mr-3"></i>
-                        <span>Pay Now</span>
-                        <div class="loading hidden ml-2"></div>
-                    </button>
-                </div>
-                <p class="text-center mt-4 text-text-secondary">
-                    <i class="fas fa-lock mr-1"></i> Secure Payment via PayPal
-                    <br>
-                    <span class="text-sm">Pay with credit card, debit card, Apple Pay, or Venmo</span>
-                </p>
+        <section id="payment-section" class="max-w-4xl mx-auto p-6 md:p-8 text-center hidden">
+            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Complete Your Purchase</h2>
+            <div id="payment-button-container" class="flex justify-center">
+                <!-- Square payment buttons will be injected here -->
             </div>
-            <p class="text-center mt-6 text-text-secondary"><i class="fas fa-shield-alt mr-2 text-green-400"></i>All payments are secure and encrypted.</p>
         </section>
     </main>
 
-    <!-- Payment Modal -->
-    <div class="modal-overlay hidden" id="paymentModalOverlay">
-        <div class="modal-content">
-            <button type="button" class="modal-close-btn" id="closePaymentModalBtn">&times;</button>
-            <h2 class="text-2xl font-bold mb-4">Choose Your Payment Method</h2>
-            <div id="paypal-buttons-container"></div>
-            <div id="paymentError" class="error-message hidden"></div>
-        </div>
-    </div>
-
-    <!-- Success Modal -->
-    <div class="modal fixed top-0 left-0 w-full h-full bg-black/70 backdrop-blur-md flex justify-center items-center z-50 hidden" id="successModal">
-        <div class="glass-card text-center max-w-md w-full m-4 p-6 md:p-8">
-            <div class="text-6xl text-green-400 mb-4"><i class="fas fa-check-circle"></i></div>
-            <h2 class="text-3xl font-bold mb-4">Order Successful!</h2>
-            <p class="text-lg text-text-secondary mb-6">Thank you! Bob has been notified and will begin working on your voiceover. You'll receive it within 24-48 hours.</p>
-            <div class="bg-black/20 p-4 rounded-lg border border-glass-border mb-6 text-left space-y-2">
-                <div class="flex justify-between"><span>Order ID:</span><span id="orderId" class="font-semibold text-primary-gold"></span></div>
-                <div class="flex justify-between"><span>Paid With:</span><span id="orderPaymentMethod" class="font-semibold text-primary-gold"></span></div>
-            </div>
-            <button class="payment-btn w-full h-14 bg-primary-gold text-black" id="startNewOrderBtn">Start New Order</button>
-        </div>
-    </div>
-
-    <!-- Square Card Payment Modal -->
-    <div class="modal-overlay hidden" id="squarePaymentModalOverlay">
-        <div class="modal-content">
-            <button type="button" class="modal-close-btn" id="closeSquareModalBtn">&times;</button>
-            <h2 class="text-2xl font-bold mb-4">Enter Card Details</h2>
-            <form id="square-payment-form">
-                <div id="card-container"></div>
-                <button id="card-button" type="button" class="payment-btn w-full bg-green-600 h-16 flex items-center justify-center text-lg mt-4">Pay Now</button>
-            </form>
-            <div id="squarePaymentError" class="error-message hidden"></div>
-        </div>
-    </div>
-
-    <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
-    <script id="paypal-sdk" src="https://www.paypal.com/sdk/js?client-id=ASYoB6I28TkHKT8P_alVYSOLsw3qI1TG5SHV8zEu8TparhBHCGupiPykL9N8WA--fJ96u2IiOBJ57voQ&currency=USD&components=buttons&enable-funding=venmo,paylater,card"></script>
-
     <script>
-        let paypalSDKLoaded = false;
-        function onPayPalSDKLoaded() {
-            paypalSDKLoaded = true;
-            console.log('PayPal SDK loaded successfully.');
-            // Attempt to render buttons if modal is already open (e.g., if user refreshed page in modal state)
-            if (!paymentModalOverlay.classList.contains('hidden')) {
-                renderPayPalButtons();
-            }
-        }
-
-        // --- State Variables ---
-        let selectedDuration = null;
-        let selectedPrice = null;
-        let uploadedFile = null;
-        
-        // Debug: Log when DOM is fully loaded
-        console.log('DOM fully loaded');
-        let currentOrderId = null;
-        let videoObjectURL = null;
-        
-        // --- DOM Element References ---
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const emailInput = document.getElementById('email');
-        const phoneInput = document.getElementById('phone');
-        const scriptTextarea = document.getElementById('script');
-        const fileInput = document.getElementById('videoFile');
-        const uploadArea = document.getElementById('fileUploadArea');
-        const videoPreview = document.getElementById('videoPreview');
-        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
-        const removeFileBtn = document.getElementById('removeFileBtn');
-        const pricingCards = document.querySelectorAll('.pricing-card');
-        const paypalBtn = document.getElementById('paypalBtn');
-        const payNowBtn = document.getElementById('payNowBtn');
-        const successModal = document.getElementById('successModal');
-        const startNewOrderBtn = document.getElementById('startNewOrderBtn');
-        const paymentModalOverlay = document.getElementById('paymentModalOverlay');
-        const closePaymentModalBtn = document.getElementById('closePaymentModalBtn');
-        const paymentErrorDiv = document.getElementById('paymentError');
-        const paypalButtonsContainer = document.getElementById('paypal-buttons-container');
-        const API_BASE_URL = '/api';
-        
-        // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            const paypalScript = document.getElementById('paypal-sdk');
-            if (paypalScript) {
-                paypalScript.addEventListener('load', onPayPalSDKLoaded);
-            }
-            // Initialize file upload functionality
-            setupFileUpload();
-            
-            // Initialize event listeners
-            setupEventListeners();
-            
-            // Initial form validation
-            checkFormValidity();
-            
-            // Debug: Log payment button elements
-            console.log('PayPal Button:', document.getElementById('paypalBtn'));
-            console.log('Pay Now Button:', document.getElementById('payNowBtn'));
+            const pricingCards = document.querySelectorAll('.pricing-card');
+            const paymentSection = document.getElementById('payment-section');
+            const paymentButtonContainer = document.getElementById('payment-button-container');
 
-            function setupEventListeners() {
-                // Form field validation
-                const requiredFormFields = ['firstName', 'lastName', 'email', 'phone'];
-                requiredFormFields.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.addEventListener('input', checkFormValidity);
+            const paymentButtons = {
+                '30s': `
+                    <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: SQ Market, SQ Market, Helvetica, Arial, sans-serif;">
+                      <div style="padding: 20px;">
+                          <p style="font-size: 18px; line-height: 20px; color: #000;">30 Second Voiceover</p>
+                          <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000;">$200.00</p>
+                        <a target="_blank" href="https://square.link/u/mkMQdwHe?src=embed" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px; text-decoration: none;">Buy now</a>
+                      </div>
+                    </div>`,
+                '60s': `
+                    <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: SQ Market, SQ Market, Helvetica, Arial, sans-serif;">
+                      <div style="padding: 20px;">
+                          <p style="font-size: 18px; line-height: 20px; color: #000;">60 Second Voiceover</p>
+                          <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000;">$250.00</p>
+                        <a target="_blank" href="https://square.link/u/gXHLj6hO?src=embed" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px; text-decoration: none;">Buy now</a>
+                      </div>
+                    </div>`
+            };
+
+            pricingCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    // Highlight selected card
+                    pricingCards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+
+                    // Show payment section and inject the correct button
+                    const selectedPackage = card.dataset.package;
+                    paymentButtonContainer.innerHTML = paymentButtons[selectedPackage];
+                    paymentSection.classList.remove('hidden');
+                    
+                    // Scroll to payment section
+                    paymentSection.scrollIntoView({ behavior: 'smooth' });
                 });
-                
-                if (scriptTextarea) scriptTextarea.addEventListener('input', checkFormValidity);
-                
-                // Pricing cards
-                pricingCards.forEach(card => {
-                    card.addEventListener('click', () => selectPricing(card));
-                });
-                
-                // Payment buttons - always clickable but will validate first
-                console.log('Setting up payment button event listeners');
-                const paypalBtn = document.getElementById('paypalBtn');
-                const payNowBtn = document.getElementById('payNowBtn');
-                
-                if (paypalBtn) {
-                    console.log('Adding click listener to PayPal button');
-                    paypalBtn.addEventListener('click', (e) => {
-                        console.log('PayPal button clicked');
-                        validateAndOpenPayment('paypal');
-                    });
-                    paypalBtn.disabled = false; // Ensure button is enabled
-                } else {
-                    console.error('PayPal button not found in DOM');
-                }
-                
-                if (payNowBtn) {
-                    console.log('Adding click listener to Pay Now button');
-                    payNowBtn.addEventListener('click', (e) => {
-                        console.log('Pay Now button clicked');
-                        validateAndOpenPayment('square');
-                    });
-                    payNowBtn.disabled = false; // Ensure button is enabled
-                } else {
-                    console.error('Pay Now button not found in DOM');
-                }
-                
-                // Modal controls
-                if (closePaymentModalBtn) closePaymentModalBtn.addEventListener('click', closePaymentModal);
-                if (removeFileBtn) removeFileBtn.addEventListener('click', removeFile);
-                if (startNewOrderBtn) startNewOrderBtn.addEventListener('click', closeModal);
-            }
-
-            // --- Functions ---
-            function setupFileUpload() {
-                ['dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (eventName === 'dragover') {
-                            uploadArea.classList.add('border-primary-gold');
-                        } else {
-                            uploadArea.classList.remove('border-primary-gold');
-                        }
-                    });
-                });
-                uploadArea.addEventListener('drop', e => handleFileSelect(e.dataTransfer.files[0]));
-                uploadArea.addEventListener('click', () => fileInput.click());
-                fileInput.addEventListener('change', e => handleFileSelect(e.target.files[0]));
-            }
-
-            function handleFileSelect(file) {
-                if (!file || !file.type.startsWith('video/')) {
-                    alert('Error: Please select a valid video file.');
-                    return;
-                }
-                if (file.size > 500 * 1024 * 1024) { // 500MB limit
-                    alert('Error: File size exceeds the 500MB limit.');
-                    return;
-                }
-                uploadedFile = file;
-                videoObjectURL = URL.createObjectURL(file);
-                videoPreview.src = videoObjectURL;
-                uploadArea.classList.add('hidden');
-                videoPreviewContainer.classList.remove('hidden');
-                checkFormValidity();
-            }
-
-            function removeFile() {
-                uploadedFile = null;
-                if (videoObjectURL) {
-                    URL.revokeObjectURL(videoObjectURL);
-                    videoObjectURL = null;
-                }
-                fileInput.value = '';
-                videoPreview.src = '';
-                uploadArea.classList.remove('hidden');
-                videoPreviewContainer.classList.add('hidden');
-                checkFormValidity();
-            }
-
-            function selectPricing(card) {
-                pricingCards.forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                selectedDuration = card.dataset.duration;
-                selectedPrice = card.dataset.price;
-                checkFormValidity();
-            }
-
-            function checkFormValidity() {
-                const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
-                const isFormValid = requiredFields.every(id => {
-                    const el = document.getElementById(id);
-                    return el && el.value.trim() !== '';
-                }) && uploadedFile && selectedDuration && selectedPrice;
-
-                // Always enable the payment buttons - validation will happen on click
-                if (paypalBtn) paypalBtn.disabled = false;
-                if (payNowBtn) payNowBtn.disabled = false;
-
-                return isFormValid;
-            }
-
-            function validateAndHighlight() {
-                let firstErrorElement = null;
-
-                requiredFormFields.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element && element.value.trim() === '') {
-                        element.classList.add('error');
-                        if (!firstErrorElement) {
-                            firstErrorElement = element;
-                        }
-                    } else if (element) {
-                        element.classList.remove('error');
-                    }
-                });
-
-                if (!uploadedFile) {
-                    uploadArea.classList.add('error');
-                    if (!firstErrorElement) {
-                        firstErrorElement = uploadArea;
-                    }
-                } else {
-                    uploadArea.classList.remove('error');
-                }
-
-                if (!selectedPrice) {
-                    document.getElementById('packages-section').classList.add('error');
-                    if (!firstErrorElement) {
-                        firstErrorElement = document.getElementById('packages-section');
-                    }
-                } else {
-                    document.getElementById('packages-section').classList.remove('error');
-                }
-
-                if (firstErrorElement) {
-                    firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    alert('Please fill out all required fields.');
-                    return false;
-                }
-
-                return true;
-            }
-
-            // --- Payment Modal Logic ---
-            async function openPaymentModal(paymentMethod) {
-                if (paymentMethod === 'paypal') {
-                    openPayPalModal();
-                } else if (paymentMethod === 'square') {
-                    openSquareModal();
-                }
-            }
-
-            async function openPayPalModal() {
-                console.log('openPayPalModal called');
-                paymentModalOverlay.classList.remove('hidden');
-                document.querySelector('#paymentModalOverlay .modal-content h2').textContent = `Pay $${selectedPrice}`;
-                
-                paypalButtonsContainer.innerHTML = ''; 
-                paymentErrorDiv.classList.add('hidden');
-
-                const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'text-center py-4';
-                loadingDiv.innerHTML = '<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold mx-auto"></div><p class="mt-2">Preparing payment options...</p>';
-                paypalButtonsContainer.appendChild(loadingDiv);
-
-                try {
-                    const formData = new FormData();
-                    if (uploadedFile) formData.append('video', uploadedFile);
-                    formData.append('email', emailInput.value);
-                    formData.append('name', `${firstNameInput.value} ${lastNameInput.value}`.trim());
-                    formData.append('phone', phoneInput.value);
-                    formData.append('notes', scriptTextarea.value);
-                    formData.append('duration', selectedDuration);
-                    formData.append('amount', selectedPrice);
-                    formData.append('paymentMethod', 'paypal');
-                    formData.append('status', 'pending');
-
-                    const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!orderResponse.ok) {
-                        const errorData = await orderResponse.json();
-                        throw new Error(errorData.message || 'Failed to create order on backend.');
-                    }
-
-                    const orderResult = await orderResponse.json();
-                    currentOrderId = orderResult.orderId;
-                    const paypalOrderId = orderResult.paypalOrderId;
-
-                    if (!paypalOrderId) {
-                        throw new Error('PayPal order ID was not returned from the server.');
-                    }
-
-                    if (paypalSDKLoaded) {
-                        paypalButtonsContainer.innerHTML = '';
-                        renderPayPalButtons(paypalOrderId);
-                    } else {
-                        console.error('PayPal SDK not loaded yet.');
-                        paymentErrorDiv.textContent = 'Payment options are not available. Please try again later.';
-                        paymentErrorDiv.classList.remove('hidden');
-                    }
-
-                } catch (error) {
-                    console.error('Error during order creation or payment modal opening:', error);
-                    paypalButtonsContainer.innerHTML = '';
-                    paymentErrorDiv.textContent = `Error: ${error.message || 'Failed to initialize payment. Please try again.'}`;
-                    paymentErrorDiv.classList.remove('hidden');
-                }
-            }
-
-            async function openSquareModal() {
-                const squarePaymentModalOverlay = document.getElementById('squarePaymentModalOverlay');
-                squarePaymentModalOverlay.classList.remove('hidden');
-                
-                const cardButton = document.getElementById('card-button');
-                cardButton.disabled = true;
-
-                try {
-                    const payments = Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
-                    const card = await payments.card();
-                    await card.attach('#card-container');
-
-                    cardButton.disabled = false;
-
-                    cardButton.addEventListener('click', async () => {
-                        const result = await card.tokenize();
-                        if (result.status === 'OK') {
-                            const token = result.token;
-                            
-                            const response = await fetch(`${API_BASE_URL}/payments/process-square-payment`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    sourceId: token,
-                                    orderId: currentOrderId,
-                                    amount: selectedPrice
-                                })
-                            });
-
-                            const paymentResult = await response.json();
-
-                            if (paymentResult.success) {
-                                squarePaymentModalOverlay.classList.add('hidden');
-                                showSuccessModal('Credit/Debit Card');
-                            } else {
-                                document.getElementById('squarePaymentError').textContent = paymentResult.error || 'Payment failed.';
-                                document.getElementById('squarePaymentError').classList.remove('hidden');
-                            }
-                        }
-                    });
-                } catch (e) {
-                    console.error('Initializing Square failed', e);
-                }
-            }
-
-            function closePaymentModal() {
-                paymentModalOverlay.classList.add('hidden');
-                paymentErrorDiv.classList.add('hidden');
-            }
-
-            function renderPayPalButtons(paypalOrderId) {
-                if (!window.paypal) {
-                    console.error('PayPal SDK not available.');
-                    paymentErrorDiv.textContent = 'PayPal is not available. Please try again later.';
-                    paymentErrorDiv.classList.remove('hidden');
-                    return;
-                }
-
-                window.paypal.Buttons({
-                    createOrder: (data, actions) => {
-                        return paypalOrderId;
-                    },
-                    onApprove: async (data, actions) => {
-                        try {
-                            const response = await fetch(`${API_BASE_URL}/payments/capture-paypal-order`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ orderID: data.orderID })
-                            });
-
-                            const captureDetails = await response.json();
-
-                            if (!response.ok) {
-                                throw new Error(captureDetails.error || 'Failed to capture payment.');
-                            }
-                            
-                            // On successful capture
-                            closePaymentModal();
-                            showSuccessModal('PayPal');
-
-                        } catch (error) {
-                            console.error('Error capturing PayPal payment:', error);
-                            paymentErrorDiv.textContent = error.message;
-                            paymentErrorDiv.classList.remove('hidden');
-                            throw error;
-                        }
-                    },
-                    onError: (err) => {
-                        console.error('PayPal button error:', err);
-                        paymentErrorDiv.textContent = 'An error occurred with PayPal. Please try again.';
-                        paymentErrorDiv.classList.remove('hidden');
-                    }
-                }).render('#paypal-buttons-container').catch(err => {
-                    console.error('Failed to render PayPal buttons:', err);
-                    paymentErrorDiv.textContent = 'Failed to display PayPal buttons. Please refresh and try again.';
-                    paymentErrorDiv.classList.remove('hidden');
-                });
-            }
-
-            function showSuccessModal(paymentMethod) {
-                document.getElementById('orderId').textContent = currentOrderId || 'N/A';
-                document.getElementById('orderPaymentMethod').textContent = paymentMethod;
-                successModal.classList.remove('hidden');
-            }
-            
-            function closeModal() {
-                successModal.classList.add('hidden');
-                // Reset form and state for a new order
-                orderForm.reset();
-                removeFile();
-                pricingCards.forEach(c => c.classList.remove('selected'));
-                selectedDuration = null;
-                selectedPrice = null;
-                currentOrderId = null;
-                checkFormValidity();
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
-            }
-
-            // Validate form and show payment modal if valid
-            function validateAndOpenPayment(paymentMethod) {
-                console.log('validateAndOpenPayment called with:', paymentMethod);
-                
-                // Reset all error states
-                document.querySelectorAll('.error-message').forEach(el => el.remove());
-                document.querySelectorAll('.error-highlight').forEach(el => {
-                    el.classList.remove('error-highlight');
-                });
-                
-                let isValid = true;
-                const requiredFields = [
-                    { id: 'firstName', name: 'First Name' },
-                    { id: 'lastName', name: 'Last Name' },
-                    { id: 'email', name: 'Email' },
-                    { id: 'phone', name: 'Phone Number' }
-                ];
-                
-                // Check required fields
-                requiredFields.forEach(field => {
-                    const element = document.getElementById(field.id);
-                    if (element && !element.value.trim()) {
-                        showError(element, `${field.name} is required`);
-                        isValid = false;
-                    }
-                });
-                
-                // Check file upload
-                if (!uploadedFile) {
-                    showError(uploadArea, 'Please upload a video file');
-                    isValid = false;
-                } else {
-                    console.log('Video file is uploaded');
-                }
-                
-                // Check pricing selection
-                if (!selectedDuration || !selectedPrice) {
-                    const pricingSection = document.getElementById('packages-section');
-                    showError(pricingSection, 'Please select a package');
-                    isValid = false;
-                } else {
-                    console.log('Package is selected:', { duration: selectedDuration, price: selectedPrice });
-                }
-                
-                console.log('Form validation result:', isValid);
-                
-                // Always try to open the payment modal, but show errors if not valid
-                if (isValid) {
-                    console.log('All validations passed, opening payment modal');
-                    openPaymentModal(paymentMethod);
-                } else {
-                    console.log('Validation failed, showing errors');
-                    // Scroll to first error
-                    const firstError = document.querySelector('.error-highlight');
-                    if (firstError) {
-                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }
-            
-            // Helper function to show error messages
-            function showError(element, message) {
-                // Add error class to element
-                element.classList.add('error-highlight');
-                
-                // Create and append error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message text-red-400 text-sm mt-1';
-                errorDiv.textContent = message;
-                
-                // Insert after the element or its parent if it's a form group
-                const parent = element.closest('.form-group') || element.parentNode;
-                parent.insertBefore(errorDiv, element.nextSibling);
-            }
-            
-            // All event listeners are now set up in setupEventListeners()
+            });
         });
     </script>
 </body>

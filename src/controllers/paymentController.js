@@ -276,6 +276,37 @@ class PaymentController {
       res.status(500).json({ error: 'Failed to process Square payment' });
     }
   }
+
+  static async handleSquareWebhook(req, res) {
+    const signature = req.headers['x-square-signature'];
+    const timestamp = req.headers['x-square-timestamp'];
+    const body = req.body.toString();
+
+    if (!SquarePaymentService.verifyWebhookSignature(signature, body, timestamp)) {
+      return res.status(403).json({ error: 'Invalid signature' });
+    }
+
+    const { type, data } = JSON.parse(body);
+
+    if (type === 'payment.updated') {
+      const payment = data.object.payment;
+      if (payment.status === 'COMPLETED') {
+        const orderId = payment.order_id;
+        // You would typically have more customer info stored with the order
+        // For now, we'll create a basic order record
+        await Order.create({
+          id: orderId,
+          status: 'processing',
+          price: payment.amount_money.amount / 100,
+          paymentStatus: 'paid',
+          paymentMethod: 'square',
+          paymentDetails: JSON.stringify(payment),
+        });
+      }
+    }
+
+    res.status(200).json({ success: true });
+  }
 }
 
 module.exports = PaymentController;

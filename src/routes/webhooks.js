@@ -9,4 +9,7 @@ router.post('/paypal', express.json({ verify: (req, res, buf) => {
   req.rawBody = buf.toString();
 }}), PaymentController.handlePaypalWebhook);
 
+// Square Webhook endpoint
+router.post('/square', express.raw({ type: 'application/json' }), PaymentController.handleSquareWebhook);
+
 module.exports = router;

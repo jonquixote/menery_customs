@@ -647,258 +647,76 @@
                 paymentErrorDiv.classList.add('hidden');
             }
 
-            async function renderPayPalButtons() {
-                const paypalButtonsContainer = document.getElementById('paypalButtonsContainer');
-                const paymentErrorDiv = document.getElementById('paymentErrorDiv');
-                
-                try {
-                    // Ensure PayPal SDK is loaded
-                    if (!window.paypal) {
-                        console.log('[PayPal] SDK not loaded, attempting to load...');
-                        
-                        // Show loading state
-                        paypalButtonsContainer.innerHTML = `
-                            <div class="text-center py-8">
-                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto mb-4"></div>
-                                <h3 class="text-lg font-semibold mb-2">Loading PayPal...</h3>
-                                <p class="text-sm text-gray-300">Please wait while we prepare your payment options.</p>
-                            </div>
-                        `;
-                        
-                        // Try to load PayPal SDK
-                        await new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = 'https://www.paypal.com/sdk/js?client-id=Abh6x3sZnp5KzoKzKZJtQfC7L5c4J5kH5k5k5k5k5k5k5k5k5k5k5k5k5k&currency=USD';
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                        
-                        console.log('[PayPal] SDK loaded successfully');
-                    }
+            function renderPayPalButtons() {
+                if (!window.paypal) {
+                    console.error('PayPal SDK not available.');
+                    paymentErrorDiv.textContent = 'PayPal is not available. Please try again later.';
+                    paymentErrorDiv.classList.remove('hidden');
+                    return;
+                }
 
-                    paypalButtonsContainer.innerHTML = '';
-                    paymentErrorDiv.classList.add('hidden');
+                window.paypal.Buttons({
+                    createOrder: async (data, actions) => {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/payments/create-paypal-order`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    orderId: currentOrderId,
+                                    amount: selectedPrice,
+                                    description: `Voiceover Order - ${selectedDuration}s`
+                                })
+                            });
 
-                    window.paypal.Buttons({
-                        style: {
-                            layout: 'vertical',
-                            color: 'gold',
-                            shape: 'rect',
-                            label: 'pay'
-                        },
-                        createOrder: async function(data, actions) {
-                            console.log('[PayPal] Creating order with orderId:', currentOrderId);
-                            
-                            if (!currentOrderId) {
-                                const errorMsg = 'No currentOrderId available for PayPal order creation.';
-                                console.error(errorMsg);
-                                paymentErrorDiv.textContent = 'Order not initialized. Please try again.';
-                                paymentErrorDiv.classList.remove('hidden');
-                                return actions.reject();
+                            const orderDetails = await response.json();
+
+                            if (!response.ok) {
+                                throw new Error(orderDetails.error || 'Failed to create PayPal order.');
                             }
-                            
-                            // Show loading state
-                            paymentErrorDiv.classList.add('hidden');
-                            paypalButtonsContainer.classList.add('opacity-50', 'pointer-events-none');
-                            
-                            try {
-                                const response = await fetch(`${API_BASE_URL}/payments/create-paypal-order`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-Request-ID': `frontend-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-                                    },
-                                    body: JSON.stringify({
-                                        orderId: currentOrderId,
-                                        amount: selectedPrice,
-                                        description: `Voiceover Order - ${selectedDuration}s`,
-                                        customerEmail: emailInput.value.trim(),
-                                        customerName: `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`.trim(),
-                                        paymentMethod: 'paypal',
-                                        redirectUrl: `${window.location.origin}/order/status`,
-                                        metadata: {
-                                            duration: selectedDuration,
-                                            timestamp: new Date().toISOString()
-                                        }
-                                    })
-                                });
 
-                                const responseData = await response.json();
-                                if (!response.ok) {
-                                    const errorMsg = responseData.error || 'Failed to create PayPal order';
-                                    console.error(`[PayPal] Error creating order (${response.status}):`, errorMsg, responseData);
-                                    throw new Error(errorMsg);
-                                }
-
-                                console.log('[PayPal] Order created successfully:', responseData);
-                                
-                                // Ensure we have a valid order ID from PayPal
-                                if (!responseData.id) {
-                                    throw new Error('Invalid response from server: Missing order ID');
-                                }
-                                
-                                return responseData.id; // Return PayPal's order ID
-                                
-                            } catch (error) {
-                                console.error('[PayPal] Error in createOrder:', error);
-                                paymentErrorDiv.textContent = `Error creating payment: ${error.message || 'Unknown error occurred'}`;
-                                paymentErrorDiv.classList.remove('hidden');
-                                paypalButtonsContainer.classList.remove('opacity-50', 'pointer-events-none');
-                                throw error; // Re-throw to stop the PayPal flow
-                            }
-                        },
-                        onApprove: async function(data, actions) {
-                            console.log('[PayPal] Payment approved, capturing order:', data.orderID);
-                            
-                            try {
-                                // Show processing state
-                                paypalButtonsContainer.innerHTML = '';
-                                const processingDiv = document.createElement('div');
-                                processingDiv.className = 'text-center py-4';
-                                processingDiv.innerHTML = `
-                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gold mx-auto mb-4"></div>
-                                    <h3 class="text-lg font-semibold mb-2">Processing Your Payment</h3>
-                                    <p class="text-sm text-gray-300">Please wait while we confirm your payment...</p>
-                                `;
-                                paypalButtonsContainer.appendChild(processingDiv);
-                                
-                                paymentErrorDiv.classList.add('hidden');
-                                
-                                // First, capture the payment with PayPal
-                                const captureResponse = await fetch(`${API_BASE_URL}/payments/capture-paypal-order`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'X-Request-ID': `capture-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-                                    },
-                                    body: JSON.stringify({
-                                        orderID: data.orderID,
-                                        orderId: currentOrderId // Our internal order ID
-                                    })
-                                });
-
-                                const captureResult = await captureResponse.json();
-                                
-                                if (!captureResponse.ok) {
-                                    const errorMsg = captureResult.error || 'Failed to capture payment';
-                                    console.error(`[PayPal] Error capturing order (${captureResponse.status}):`, errorMsg);
-                                    throw new Error(errorMsg);
-                                }
-
-                                console.log('[PayPal] Payment captured successfully:', captureResult);
-                                
-                                // Update the order status to 'paid' on our backend
-                                const updateResponse = await fetch(`${API_BASE_URL}/orders/${currentOrderId}/status`, {
-                                    method: 'PUT',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        status: 'paid',
-                                        paymentId: data.orderID,
-                                        paymentMethod: 'paypal'
-                                    })
-                                });
-
-                                if (!updateResponse.ok) {
-                                    console.error('[PayPal] Error updating order status:', await updateResponse.text());
-                                    // Continue anyway since the payment was captured
-                                }
-
-                                // Show success state
-                                paypalButtonsContainer.innerHTML = '';
-                                const successDiv = document.createElement('div');
-                                successDiv.className = 'text-center py-6';
-                                successDiv.innerHTML = `
-                                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </div>
-                                    <h3 class="text-xl font-semibold text-green-400 mb-2">Payment Successful!</h3>
-                                    <p class="text-sm text-gray-300 mb-4">Thank you for your order. You'll receive a confirmation email shortly.</p>
-                                    <p class="text-xs text-gray-400">Order #${currentOrderId}</p>
-                                `;
-                                paypalButtonsContainer.appendChild(successDiv);
-                                
-                                // Close the modal and redirect after a short delay
-                                setTimeout(() => {
-                                    closePaymentModal();
-                                    window.location.href = `/thank-you?orderId=${currentOrderId}&paymentId=${encodeURIComponent(data.orderID)}`;
-                                }, 3000);
-                                
-                            } catch (error) {
-                                console.error('[PayPal] Error in onApprove:', error);
-                                
-                                // Show error state
-                                paypalButtonsContainer.innerHTML = '';
-                                const errorDiv = document.createElement('div');
-                                errorDiv.className = 'text-center py-6';
-                                errorDiv.innerHTML = `
-                                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </div>
-                                    <h3 class="text-xl font-semibold text-red-400 mb-2">Payment Failed</h3>
-                                    <p class="text-sm text-gray-300 mb-4">${error.message || 'An error occurred while processing your payment. Please try again.'}</p>
-                                    <button onclick="window.location.reload()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-                                        Try Again
-                                    </button>
-                                `;
-                                paypalButtonsContainer.appendChild(errorDiv);
-                                
-                                // Log the error to our backend for debugging
-                                try {
-                                    await fetch(`${API_BASE_URL}/errors`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            type: 'paypal_payment_error',
-                                            orderId: currentOrderId,
-                                            error: error.toString(),
-                                            stack: error.stack,
-                                            timestamp: new Date().toISOString()
-                                        })
-                                    });
-                                } catch (logError) {
-                                    console.error('Failed to log error:', logError);
-                                }
-                            }
-                        },
-                        onError: function(err) {
-                            console.error('[PayPal] SDK Error:', err);
-                            paymentErrorDiv.textContent = 'An error occurred with the payment processor. Please try again or use a different payment method.';
+                            return orderDetails.id;
+                        } catch (error) {
+                            console.error('Error creating PayPal order:', error);
+                            paymentErrorDiv.textContent = error.message;
                             paymentErrorDiv.classList.remove('hidden');
-                            paypalButtonsContainer.classList.remove('opacity-50', 'pointer-events-none');
-                        },
-                        onCancel: function(data) {
-                            console.log('[PayPal] Payment cancelled by user:', data);
-                            paymentErrorDiv.textContent = 'Payment was cancelled. You can try again if you wish.';
-                            paymentErrorDiv.classList.remove('hidden');
-                            paypalButtonsContainer.classList.remove('opacity-50', 'pointer-events-none');
-                        },
-                        onClick: function() {
-                            // Clear previous errors when user tries again
-                            paymentErrorDiv.classList.add('hidden');
+                            throw error;
                         }
-                    });
-                    
-                    if (buttons.isEligible()) {
-                        buttons.render('#paypal-buttons-container');
-                        console.log('[PayPal] Buttons rendered successfully');
-                    } else {
-                        console.error('[PayPal] Buttons not eligible to render');
-                        paymentErrorDiv.textContent = 'PayPal payment option is not available. Please try another payment method.';
+                    },
+                    onApprove: async (data, actions) => {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/payments/capture-paypal-order`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderID: data.orderID })
+                            });
+
+                            const captureDetails = await response.json();
+
+                            if (!response.ok) {
+                                throw new Error(captureDetails.error || 'Failed to capture payment.');
+                            }
+                            
+                            // On successful capture
+                            closePaymentModal();
+                            showSuccessModal('PayPal');
+
+                        } catch (error) {
+                            console.error('Error capturing PayPal payment:', error);
+                            paymentErrorDiv.textContent = error.message;
+                            paymentErrorDiv.classList.remove('hidden');
+                            throw error;
+                        }
+                    },
+                    onError: (err) => {
+                        console.error('PayPal button error:', err);
+                        paymentErrorDiv.textContent = 'An error occurred with PayPal. Please try again.';
                         paymentErrorDiv.classList.remove('hidden');
                     }
-                    
-                } catch (error) {
-                    console.error('[PayPal] Error initializing PayPal buttons:', error);
-                    paymentErrorDiv.textContent = 'Failed to initialize payment options. Please try again or contact support.';
+                }).render('#paypal-buttons-container').catch(err => {
+                    console.error('Failed to render PayPal buttons:', err);
+                    paymentErrorDiv.textContent = 'Failed to display PayPal buttons. Please refresh and try again.';
                     paymentErrorDiv.classList.remove('hidden');
-                }
+                });
             }
 
             function showSuccessModal(paymentMethod) {

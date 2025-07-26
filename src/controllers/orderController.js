@@ -1,6 +1,7 @@
 const { User, Order } = require('../models');
 const S3Service = require('../services/s3Service');
 const emailService = require('../services/emailService');
+const PaypalService = require('../services/paypalService');
 const { v4: uuidv4 } = require('uuid');
 
 class OrderController {
@@ -182,13 +183,23 @@ class OrderController {
         throw new Error('Customer email is required');
       }
 
-      // Emails will be sent after successful payment capture, not here.
+      // Emails will be sent after successful payment capture.
+
+      // Now, create the PayPal order immediately
+      const paypalOrder = await PaypalService.createOrder({
+        orderId: order.id,
+        amount: order.price,
+        description: `Voiceover Order #${order.id}`
+      });
+
+      // Update our order with the PayPal order ID
+      await order.update({ paymentIntentId: paypalOrder.id });
 
       res.status(201).json({
         success: true,
         orderId: order.id,
-        message: 'Order created successfully',
-        paymentRequired: true
+        paypalOrderId: paypalOrder.id, // Send the PayPal ID to the client
+        message: 'Order created successfully'
       });
 
     } catch (error) {

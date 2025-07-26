@@ -12,4 +12,7 @@ router.post('/create-paypal-order', PaymentController.createPaypalOrder);
 // POST /api/payments/capture-paypal-order - Capture a PayPal order
 router.post('/capture-paypal-order', PaymentController.capturePaypalOrder);
 
+// POST /api/payments/process-square-payment - Process a Square payment
+router.post('/process-square-payment', PaymentController.processSquarePayment);
+
 module.exports = router;

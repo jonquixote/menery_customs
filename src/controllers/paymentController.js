@@ -242,6 +242,40 @@ class PaymentController {
       });
     }
   }
+
+  static async processSquarePayment(req, res) {
+    try {
+      const { sourceId, orderId, amount } = req.body;
+
+      if (!sourceId || !orderId || !amount) {
+        return res.status(400).json({ error: 'sourceId, orderId, and amount are required' });
+      }
+
+      const amountInCents = Math.round(parseFloat(amount) * 100);
+
+      const payment = await SquarePaymentService.createPayment({
+        sourceId,
+        amount: amountInCents,
+        orderId,
+      });
+
+      // Update order status in your database
+      await Order.update(
+        {
+          paymentStatus: 'paid',
+          status: 'processing',
+          paymentMethod: 'square',
+          paymentDetails: JSON.stringify(payment),
+        },
+        { where: { id: orderId } }
+      );
+
+      res.json({ success: true, payment });
+    } catch (error) {
+      console.error('Error processing Square payment:', error);
+      res.status(500).json({ error: 'Failed to process Square payment' });
+    }
+  }
 }
 
 module.exports = PaymentController;

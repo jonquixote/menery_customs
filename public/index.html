@@ -352,6 +352,20 @@
         </div>
     </div>
 
+    <!-- Square Card Payment Modal -->
+    <div class="modal-overlay hidden" id="squarePaymentModalOverlay">
+        <div class="modal-content">
+            <button type="button" class="modal-close-btn" id="closeSquareModalBtn">&times;</button>
+            <h2 class="text-2xl font-bold mb-4">Enter Card Details</h2>
+            <form id="square-payment-form">
+                <div id="card-container"></div>
+                <button id="card-button" type="button" class="payment-btn w-full bg-green-600 h-16 flex items-center justify-center text-lg mt-4">Pay Now</button>
+            </form>
+            <div id="squarePaymentError" class="error-message hidden"></div>
+        </div>
+    </div>
+
+    <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
     <script id="paypal-sdk" src="https://www.paypal.com/sdk/js?client-id=ASYoB6I28TkHKT8P_alVYSOLsw3qI1TG5SHV8zEu8TparhBHCGupiPykL9N8WA--fJ96u2IiOBJ57voQ&currency=USD&components=buttons&enable-funding=venmo,paylater,card"></script>
 
     <script>
@@ -451,7 +465,7 @@
                     console.log('Adding click listener to Pay Now button');
                     payNowBtn.addEventListener('click', (e) => {
                         console.log('Pay Now button clicked');
-                        validateAndOpenPayment('paypal');
+                        validateAndOpenPayment('square');
                     });
                     payNowBtn.disabled = false; // Ensure button is enabled
                 } else {
@@ -577,29 +591,30 @@
             }
 
             // --- Payment Modal Logic ---
-            async function openPaymentModal() {
-                console.log('openPaymentModal called');
-                
-                // Don't validate again since we already validated in validateAndOpenPayment
+            async function openPaymentModal(paymentMethod) {
+                if (paymentMethod === 'paypal') {
+                    openPayPalModal();
+                } else if (paymentMethod === 'square') {
+                    openSquareModal();
+                }
+            }
+
+            async function openPayPalModal() {
+                console.log('openPayPalModal called');
                 paymentModalOverlay.classList.remove('hidden');
                 document.querySelector('#paymentModalOverlay .modal-content h2').textContent = `Pay $${selectedPrice}`;
                 
-                // Clear previous buttons before rendering new ones
                 paypalButtonsContainer.innerHTML = ''; 
-                paymentErrorDiv.classList.add('hidden'); // Hide any previous errors
+                paymentErrorDiv.classList.add('hidden');
 
-                // Show loading state
                 const loadingDiv = document.createElement('div');
                 loadingDiv.className = 'text-center py-4';
                 loadingDiv.innerHTML = '<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gold mx-auto"></div><p class="mt-2">Preparing payment options...</p>';
                 paypalButtonsContainer.appendChild(loadingDiv);
 
                 try {
-                    // First, create the order on our backend
                     const formData = new FormData();
-                    if (uploadedFile) {
-                        formData.append('video', uploadedFile);
-                    }
+                    if (uploadedFile) formData.append('video', uploadedFile);
                     formData.append('email', emailInput.value);
                     formData.append('name', `${firstNameInput.value} ${lastNameInput.value}`.trim());
                     formData.append('phone', phoneInput.value);
@@ -607,7 +622,7 @@
                     formData.append('duration', selectedDuration);
                     formData.append('amount', selectedPrice);
                     formData.append('paymentMethod', 'paypal');
-                    formData.append('status', 'pending'); // Explicitly set status to pending
+                    formData.append('status', 'pending');
 
                     const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
                         method: 'POST',
@@ -620,25 +635,72 @@
                     }
 
                     const orderResult = await orderResponse.json();
+                    currentOrderId = orderResult.orderId;
+                    const paypalOrderId = orderResult.paypalOrderId;
 
-                    currentOrderId = orderResult.orderId; // Store the order ID from our backend
+                    if (!paypalOrderId) {
+                        throw new Error('PayPal order ID was not returned from the server.');
+                    }
 
-                    // Now render PayPal buttons if SDK is loaded
                     if (paypalSDKLoaded) {
-                        paypalButtonsContainer.innerHTML = ''; // Clear loading
-                        renderPayPalButtons();
+                        paypalButtonsContainer.innerHTML = '';
+                        renderPayPalButtons(paypalOrderId);
                     } else {
-                        console.error('PayPal SDK not loaded yet. Waiting for onload event.');
-                        paypalButtonsContainer.innerHTML = ''; // Clear loading
+                        console.error('PayPal SDK not loaded yet.');
                         paymentErrorDiv.textContent = 'Payment options are not available. Please try again later.';
                         paymentErrorDiv.classList.remove('hidden');
                     }
 
                 } catch (error) {
                     console.error('Error during order creation or payment modal opening:', error);
-                    paypalButtonsContainer.innerHTML = ''; // Clear loading
+                    paypalButtonsContainer.innerHTML = '';
                     paymentErrorDiv.textContent = `Error: ${error.message || 'Failed to initialize payment. Please try again.'}`;
                     paymentErrorDiv.classList.remove('hidden');
+                }
+            }
+
+            async function openSquareModal() {
+                const squarePaymentModalOverlay = document.getElementById('squarePaymentModalOverlay');
+                squarePaymentModalOverlay.classList.remove('hidden');
+                
+                const cardButton = document.getElementById('card-button');
+                cardButton.disabled = true;
+
+                try {
+                    const payments = Square.payments(SQUARE_APP_ID, SQUARE_LOCATION_ID);
+                    const card = await payments.card();
+                    await card.attach('#card-container');
+
+                    cardButton.disabled = false;
+
+                    cardButton.addEventListener('click', async () => {
+                        const result = await card.tokenize();
+                        if (result.status === 'OK') {
+                            const token = result.token;
+                            
+                            const response = await fetch(`${API_BASE_URL}/payments/process-square-payment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    sourceId: token,
+                                    orderId: currentOrderId,
+                                    amount: selectedPrice
+                                })
+                            });
+
+                            const paymentResult = await response.json();
+
+                            if (paymentResult.success) {
+                                squarePaymentModalOverlay.classList.add('hidden');
+                                showSuccessModal('Credit/Debit Card');
+                            } else {
+                                document.getElementById('squarePaymentError').textContent = paymentResult.error || 'Payment failed.';
+                                document.getElementById('squarePaymentError').classList.remove('hidden');
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('Initializing Square failed', e);
                 }
             }
 
@@ -647,7 +709,7 @@
                 paymentErrorDiv.classList.add('hidden');
             }
 
-            function renderPayPalButtons() {
+            function renderPayPalButtons(paypalOrderId) {
                 if (!window.paypal) {
                     console.error('PayPal SDK not available.');
                     paymentErrorDiv.textContent = 'PayPal is not available. Please try again later.';
@@ -656,31 +718,8 @@
                 }
 
                 window.paypal.Buttons({
-                    createOrder: async (data, actions) => {
-                        try {
-                            const response = await fetch(`${API_BASE_URL}/payments/create-paypal-order`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    orderId: currentOrderId,
-                                    amount: selectedPrice,
-                                    description: `Voiceover Order - ${selectedDuration}s`
-                                })
-                            });
-
-                            const orderDetails = await response.json();
-
-                            if (!response.ok) {
-                                throw new Error(orderDetails.error || 'Failed to create PayPal order.');
-                            }
-
-                            return orderDetails.id;
-                        } catch (error) {
-                            console.error('Error creating PayPal order:', error);
-                            paymentErrorDiv.textContent = error.message;
-                            paymentErrorDiv.classList.remove('hidden');
-                            throw error;
-                        }
+                    createOrder: (data, actions) => {
+                        return paypalOrderId;
                     },
                     onApprove: async (data, actions) => {
                         try {

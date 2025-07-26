@@ -245,6 +245,37 @@ class SquareService {
       return false;
     }
   }
+
+  /**
+   * Create a new payment using a nonce (payment token).
+   * @param {Object} paymentDetails - The details for the payment.
+   * @param {string} paymentDetails.sourceId - The payment token (nonce) from the frontend.
+   * @param {number} paymentDetails.amount - The amount to charge in cents.
+   * @param {string} paymentDetails.orderId - The internal order ID.
+   * @returns {Promise<Object>} The created payment object.
+   */
+  async createPayment({ sourceId, amount, orderId }) {
+    if (!this.isInitialized()) {
+      throw new Error('Square service is not properly initialized');
+    }
+
+    try {
+      const { result } = await this.client.paymentsApi.createPayment({
+        sourceId,
+        idempotencyKey: uuidv4(),
+        amountMoney: {
+          amount: BigInt(amount),
+          currency: 'USD',
+        },
+        orderId,
+      });
+
+      return result.payment;
+    } catch (error) {
+      console.error('Error creating Square payment:', error);
+      throw new Error('Failed to create Square payment.');
+    }
+  }
 }
 
 module.exports = SquareService;

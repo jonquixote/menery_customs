@@ -557,40 +557,9 @@
                 }
             }
 
-            async function handlePaymentClick(event, squareLink) {
+            function handlePaymentClick(event, squareLink) {
                 event.preventDefault();
-                
-                if (!checkFormValidity()) {
-                    alert('Please fill out all required fields before proceeding to payment.');
-                    return;
-                }
-
-                try {
-                    const formData = new FormData();
-                    if (uploadedFile) formData.append('video', uploadedFile);
-                    formData.append('email', emailInput.value);
-                    formData.append('name', `${firstNameInput.value} ${lastNameInput.value}`.trim());
-                    formData.append('phone', phoneInput.value);
-                    formData.append('notes', scriptTextarea.value);
-                    formData.append('duration', selectedDuration);
-                    formData.append('amount', selectedPrice);
-                    formData.append('paymentMethod', 'square');
-                    formData.append('status', 'pending');
-
-                    const response = await fetch(`${API_BASE_URL}/orders`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to create order.');
-                    }
-
-                    window.location.href = squareLink;
-                } catch (error) {
-                    console.error('Error creating order before Square redirect:', error);
-                    alert('There was an error preparing your order. Please try again.');
-                }
+                window.location.href = squareLink;
             }
 
             function checkFormValidity() {

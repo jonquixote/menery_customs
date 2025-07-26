@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bob Menery's Custom Voiceovers - Simplified</title>
+    <title>Bob Menery's Custom Voiceovers - Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,6 @@
             font-family: 'Poppins', sans-serif;
             background-color: var(--dark-bg);
             color: var(--text-primary);
-            overflow-x: hidden;
         }
         .main-title {
             font-family: 'Orbitron', monospace;
@@ -40,12 +39,9 @@
         }
         .pricing-card {
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
             border: 2px solid transparent;
         }
         .pricing-card.selected {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
             border-color: var(--primary-gold);
         }
     </style>
@@ -53,91 +49,88 @@
 <body class="bg-dark-bg">
 
     <header class="text-center py-8 px-4">
-        <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mb-3">
-            <div class="w-48 md:w-56 flex-shrink-0">
-                <img src="IMG_4957.png" alt="Bob Menery's Custom Voiceovers" class="w-full h-auto">
-            </div>
-            <div class="text-center md:text-left">
-                <h1 class="main-title text-4xl lg:text-5xl">Bob Menery’s</h1>
-                <h2 class="text-xl lg:text-2xl font-semibold text-text-primary -mt-1 md:-mt-2">Custom Voiceovers</h2>
-            </div>
-        </div>
-        <p class="text-base text-text-secondary max-w-2xl mx-auto leading-relaxed">
-            Transform your videos with Bob's iconic commentary. Select a package to get started.
-        </p>
+        <img src="IMG_4957.png" alt="Bob Menery's Custom Voiceovers" class="w-48 mx-auto">
+        <h1 class="main-title text-4xl lg:text-5xl">Bob Menery’s Custom Voiceovers</h1>
     </header>
 
     <main class="container mx-auto px-4 py-8 space-y-12">
-        <section id="packages-section" class="max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Choose Your Package</h2>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="pricing-card bg-card-bg p-8 rounded-lg" data-package="30s">
-                    <div class="text-2xl font-bold text-primary-gold mb-2">30 Seconds</div>
-                    <div class="text-5xl font-extrabold mb-4">$200</div>
-                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400">
-                        <li>Pro quality recording</li>
-                        <li>24-48 hour delivery</li>
-                    </ul>
+        <form id="orderForm" class="space-y-8">
+            <section class="max-w-4xl mx-auto p-6 md:p-8 bg-card-bg rounded-lg">
+                <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 1: Your Details & Video</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <input type="text" id="name" placeholder="Full Name" class="form-input bg-gray-800 border-gray-700 rounded p-2" required>
+                    <input type="email" id="email" placeholder="Email Address" class="form-input bg-gray-800 border-gray-700 rounded p-2" required>
                 </div>
-                <div class="pricing-card bg-card-bg p-8 rounded-lg" data-package="60s">
-                    <div class="text-2xl font-bold text-primary-gold mb-2">60 Seconds</div>
-                    <div class="text-5xl font-extrabold mb-4">$250</div>
-                    <ul class="text-left space-y-2 list-inside list-disc marker:text-green-400">
-                        <li>Pro quality recording</li>
-                        <li>24-48 hour delivery</li>
-                        <li>Priority support</li>
-                    </ul>
+                <textarea id="notes" class="form-textarea w-full mt-8 bg-gray-800 border-gray-700 rounded p-2" placeholder="Your Script (Optional)"></textarea>
+                <div class="mt-8">
+                    <label class="form-label"><i class="fas fa-video mr-2"></i>Upload Your Video</label>
+                    <input type="file" id="videoFile" class="w-full bg-gray-800 border-gray-700 rounded p-2" required>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section id="payment-section" class="max-w-4xl mx-auto p-6 md:p-8 text-center hidden">
-            <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Complete Your Purchase</h2>
-            <div id="payment-button-container" class="flex justify-center">
-                <!-- Square payment buttons will be injected here -->
-            </div>
-        </section>
+            <section id="packages-section" class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-center mb-8 text-primary-gold">Step 2: Choose Your Package</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="pricing-card bg-card-bg p-8 rounded-lg" data-price="200">
+                        <h3 class="text-2xl font-bold text-primary-gold">30 Seconds - $200</h3>
+                    </div>
+                    <div class="pricing-card bg-card-bg p-8 rounded-lg" data-price="250">
+                        <h3 class="text-2xl font-bold text-primary-gold">60 Seconds - $250</h3>
+                    </div>
+                </div>
+            </section>
+
+            <section id="payment-section" class="max-w-4xl mx-auto p-6 md:p-8 text-center">
+                <button type="submit" id="payButton" class="bg-green-600 text-white font-bold py-4 px-8 rounded-lg text-2xl">Submit & Pay</button>
+            </section>
+        </form>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('orderForm');
             const pricingCards = document.querySelectorAll('.pricing-card');
-            const paymentSection = document.getElementById('payment-section');
-            const paymentButtonContainer = document.getElementById('payment-button-container');
-
-            const paymentButtons = {
-                '30s': `
-                    <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: SQ Market, SQ Market, Helvetica, Arial, sans-serif;">
-                      <div style="padding: 20px;">
-                          <p style="font-size: 18px; line-height: 20px; color: #000;">30 Second Voiceover</p>
-                          <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000;">$200.00</p>
-                        <a target="_blank" href="https://square.link/u/mkMQdwHe?src=embed" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px; text-decoration: none;">Buy now</a>
-                      </div>
-                    </div>`,
-                '60s': `
-                    <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: SQ Market, SQ Market, Helvetica, Arial, sans-serif;">
-                      <div style="padding: 20px;">
-                          <p style="font-size: 18px; line-height: 20px; color: #000;">60 Second Voiceover</p>
-                          <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000;">$250.00</p>
-                        <a target="_blank" href="https://square.link/u/gXHLj6hO?src=embed" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px; text-decoration: none;">Buy now</a>
-                      </div>
-                    </div>`
-            };
+            let selectedPrice = null;
 
             pricingCards.forEach(card => {
                 card.addEventListener('click', () => {
-                    // Highlight selected card
                     pricingCards.forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
-
-                    // Show payment section and inject the correct button
-                    const selectedPackage = card.dataset.package;
-                    paymentButtonContainer.innerHTML = paymentButtons[selectedPackage];
-                    paymentSection.classList.remove('hidden');
-                    
-                    // Scroll to payment section
-                    paymentSection.scrollIntoView({ behavior: 'smooth' });
+                    selectedPrice = card.dataset.price;
                 });
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!selectedPrice) {
+                    alert('Please select a package.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('name', document.getElementById('name').value);
+                formData.append('email', document.getElementById('email').value);
+                formData.append('notes', document.getElementById('notes').value);
+                formData.append('video', document.getElementById('videoFile').files[0]);
+                formData.append('amount', selectedPrice);
+
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (selectedPrice === '200') {
+                        window.location.href = 'https://square.link/u/mkMQdwHe';
+                    } else {
+                        window.location.href = 'https://square.link/u/gXHLj6hO';
+                    }
+                } else {
+                    alert('Failed to create order. Please try again.');
+                }
             });
         });
     </script>

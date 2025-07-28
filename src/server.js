@@ -25,7 +25,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "https://www.paypal.com", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "https://js.paypal.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
-      styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
+      styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       mediaSrc: ["'self'", "blob:"],
@@ -42,7 +42,8 @@ app.use(helmet({
         "https://api-m.sandbox.paypal.com",
         "https://api-m.paypal.com",
         "https://www.sandbox.paypal.com",
-        "https://pci-connect.squareupsandbox.com"
+        "https://pci-connect.squareupsandbox.com",
+        "https://o160250.ingest.sentry.io"
       ],
     },
   },

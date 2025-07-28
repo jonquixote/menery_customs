@@ -14,6 +14,10 @@ const PORT = process.env.PORT || 3001; // Default to 3001 for development
 // Trust the Vercel proxy
 app.set('trust proxy', 1);
 
+// Import AdminController and authentication middleware
+const AdminController = require('./controllers/adminController');
+const { authenticateAdmin } = require('./middleware/auth');
+
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
@@ -22,7 +26,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "https://www.paypal.com", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "https://js.paypal.com", "'unsafe-inline'"],
       styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
-      fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       mediaSrc: ["'self'", "blob:"],
       connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://js.squareupsandbox.com", `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`, "https://squareup.com", "https://api-m.sandbox.paypal.com", "https://api-m.paypal.com", "https://www.sandbox.paypal.com"],
@@ -30,7 +34,9 @@ app.use(helmet({
   },
 }));
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`,
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://menery-customs.vercel.app'
+    : ['http://localhost:3000', `http://localhost:${PORT}`],
   credentials: true
 }));
 
@@ -41,15 +47,11 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Webhook handlers must be defined before other body-parsing middleware
-// to use a raw body parser for signature verification.
-app.use('/api/webhooks', require('./routes/webhooks'));
-
-// Body parsing middleware
+// Body parsing middleware (must be before routes that need req.body)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// File upload middleware
+// File upload middleware (must be before routes that handle file uploads)
 app.use(fileUpload({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max file size
   abortOnLimit: true,
@@ -64,11 +66,22 @@ app.use(fileUpload({
   debug: process.env.NODE_ENV === 'development'
 }));
 
+// Webhook handlers must be defined before other body-parsing middleware
+// to use a raw body parser for signature verification.
+app.use('/api/webhooks', require('./routes/webhooks'));
+
 // API Routes
+// Admin routes (token and protected)
+app.use('/api/admin', require('./routes/admin'));
+// Protected admin routes
+app.get('/api/admin/orders', authenticateAdmin, AdminController.getAllOrders);
+app.post('/api/admin/orders/:orderId/complete', authenticateAdmin, AdminController.completeOrder);
+app.put('/api/admin/orders/:orderId/status', authenticateAdmin, AdminController.updateOrderStatus);
+
+// Other API routes
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/square', require('./routes/square'));
-app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/uploads'));
 
 // Test routes - only in development
@@ -111,9 +124,44 @@ const connectDB = async () => {
   }
 };
 
-// Connect to the database when the module is loaded
-connectDB();
+// Connect to the database and create admin user
+const bcrypt = require('bcrypt');
+const SALT_ROUNDS = 10;
+
+const initialize = async () => {
+  await connectDB();
+  const { User } = require('./models');
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminEmail = process.env.ADMIN_EMAIL;
+
+  if (adminEmail && adminPassword) {
+    const { Admin } = require('./models');
+    let admin = await Admin.findOne({ where: { email: adminEmail } });
+    if (!admin) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await Admin.create({ email: adminEmail, password: hashedPassword, name: 'Admin' });
+      console.log('Admin user created.');
+    } else if (!(await bcrypt.compare(adminPassword, admin.password))) {
+      admin.password = await bcrypt.hash(adminPassword, 10);
+      await admin.save();
+      console.log('Admin user password updated.');
+    }
+  }
+};
+
 
 // In a serverless environment, we export the app directly.
-// The traditional app.listen() is handled by the environment.
 module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  // Wait for initialization before starting the server
+  initialize().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  }).catch((err) => {
+    console.error('Failed to initialize server:', err);
+    process.exit(1);
+  });
+}

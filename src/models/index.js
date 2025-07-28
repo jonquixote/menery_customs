@@ -1,11 +1,13 @@
 const { sequelize, Sequelize } = require('../config/sequelize');
 const User = require('./User');
 const Order = require('./Order');
+const AdminModel = require('./Admin');
 
 // Initialize models with Sequelize
 const models = {
   User: User(sequelize, Sequelize),
-  Order: Order(sequelize, Sequelize)
+  Order: Order(sequelize, Sequelize),
+  Admin: AdminModel(sequelize, Sequelize)
 };
 
 // Define associations

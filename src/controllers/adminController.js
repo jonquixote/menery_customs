@@ -1,35 +1,41 @@
-const { Order, User } = require('../models');
+const { Order, Admin } = require('../models');
 const EmailService = require('../services/emailService');
 const S3Service = require('../services/s3Service');
 const jwt = require('jsonwebtoken');
 
+const bcrypt = require('bcrypt');
+
 class AdminController {
 
   static async generateToken(req, res) {
-    try {
-      const { password } = req.body;
-      const adminPassword = process.env.ADMIN_PASSWORD || 'supersecretpassword';
+    const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
 
-      if (password !== adminPassword) {
-        return res.status(401).json({ error: 'Invalid password.' });
-      }
-
-      const payload = {
-        user: {
-          id: 'admin',
-          role: 'admin'
-        }
-      };
-
-      const jwtSecret = process.env.JWT_SECRET || 'c89b8e5a6a3b4c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d';
-      const token = jwt.sign(payload, jwtSecret, { expiresIn: '1h' });
-      
-      res.json({ token });
-
-    } catch (error) {
-      console.error('Error generating token:', error);
-      res.status(500).json({ error: 'Failed to generate token' });
+    if (email.toLowerCase() !== adminEmail.toLowerCase()) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+
+    const admin = await Admin.findOne({ where: { email: adminEmail } });
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const passwordMatch = await bcrypt.compare(password, admin.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const payload = {
+      user: {
+        id: 'admin',
+        role: 'admin'
+      }
+    };
+
+    const jwtSecret = process.env.JWT_SECRET || 'c89b8e5a6a3b4c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d';
+    const token = jwt.sign(payload, jwtSecret, { expiresIn: '1h' });
+    
+    res.json({ token });
   }
 
   static async completeOrder(req, res) {
@@ -132,7 +138,7 @@ class AdminController {
 
       const whereClause = status ? { status } : {};
 
-      const orders = await Order.findAndCountAll({
+      const { count, rows } = await Order.findAndCountAll({
         where: whereClause,
         include: [{
           model: User,
@@ -144,9 +150,17 @@ class AdminController {
         offset: parseInt(offset)
       });
 
+      const ordersWithUrls = await Promise.all(rows.map(async (order) => {
+        const orderJson = order.toJSON();
+        if (orderJson.originalVideoKey) {
+          orderJson.videoUrl = await S3Service.getSignedUrl(orderJson.originalVideoKey);
+        }
+        return orderJson;
+      }));
+
       res.json({
-        orders: orders.rows,
-        total: orders.count,
+        orders: ordersWithUrls,
+        total: count,
         limit: parseInt(limit),
         offset: parseInt(offset)
       });

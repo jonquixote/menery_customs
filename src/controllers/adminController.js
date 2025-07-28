@@ -153,7 +153,7 @@ class AdminController {
       const ordersWithUrls = await Promise.all(rows.map(async (order) => {
         const orderJson = order.toJSON();
         if (orderJson.originalVideoKey) {
-          orderJson.videoUrl = await S3Service.getSignedUrl(orderJson.originalVideoKey);
+          orderJson.videoUrl = await S3Service.generateDownloadUrl(orderJson.originalVideoKey);
         }
         return orderJson;
       }));

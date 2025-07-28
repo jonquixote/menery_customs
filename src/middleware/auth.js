@@ -16,25 +16,37 @@ const authenticateAdmin = async (req, res, next) => {
     const tokenParts = authHeader.split(' ');
     const token = tokenParts[1];
 
+    let decoded;
     try {
       const jwtSecret = process.env.JWT_SECRET || 'c89b8e5a6a3b4c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d';
-      // Verify token
-      const decoded = jwt.verify(token, jwtSecret);
-
-      // Add user from payload
-      req.user = decoded;
+      decoded = jwt.verify(token, jwtSecret);
     } catch (error) {
       console.error('Token verification error:', error);
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Check if user exists and is admin
-    const user = await User.findByPk(req.user.userId);
+    // Support admin JWTs (payload: { user: { id: 'admin', role: 'admin' } })
+    if (decoded && decoded.user && decoded.user.role === 'admin') {
+      // Optionally, check Admin model for existence
+      const { Admin } = require('../models');
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+      const admin = await Admin.findOne({ where: { email: adminEmail } });
+      if (!admin) {
+        return res.status(403).json({ error: 'Admin not found' });
+      }
+      req.user = { id: 'admin', role: 'admin', email: adminEmail };
+      return next();
+    }
+
+    // Fallback: legacy user-based admin (if needed)
+    const userId = decoded.userId || (decoded.user && decoded.user.userId);
+    if (!userId) {
+      return res.status(403).json({ error: 'Not authorized as admin' });
+    }
+    const user = await User.findByPk(userId);
     if (!user || !user.isAdmin) {
       return res.status(403).json({ error: 'Not authorized as admin' });
     }
-
-    // Attach user to request object
     req.user = user;
     next();
   } catch (error) {

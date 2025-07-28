@@ -9,6 +9,11 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
     <link rel="manifest" href="/favicon_io/site.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inject Square public credentials for frontend SDK -->
+    <script>
+      window.SQUARE_APP_ID = 'sandbox-sq0idb-mCj0TLoo69ZW3ehBbko77A';
+      window.SQUARE_LOCATION_ID = 'L1TFJB8RR';
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -389,8 +394,7 @@
         const paymentErrorDiv = document.getElementById('paymentError');
         const paypalButtonsContainer = document.getElementById('paypal-buttons-container');
         const API_BASE_URL = '/api';
-        const SQUARE_APP_ID = '<%= process.env.SQUARE_APP_ID %>';
-        const SQUARE_LOCATION_ID = '<%= process.env.SQUARE_LOCATION_ID %>';
+        // Square App ID and Location ID are injected above for the frontend SDK
         
         // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {

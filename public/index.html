@@ -650,10 +650,18 @@
                     return;
                 }
 
+
                 try {
                     squarePayments = window.Square.payments(appId, locationId);
+                } catch (e) {
+                    errorDiv.textContent = 'Failed to initialize Square payment form.';
+                    errorDiv.classList.remove('hidden');
+                    document.getElementById('square-loading-spinner').style.display = 'none';
+                    return;
+                }
 
-                    // Apple Pay
+                // Try to add Apple Pay button, but don't fail if not available
+                try {
                     if (await squarePayments.applePay?.isSupported()) {
                         applePay = await squarePayments.applePay();
                         const appleBtn = document.createElement('button');
@@ -672,8 +680,12 @@
                         };
                         walletButtons.appendChild(appleBtn);
                     }
+                } catch (e) {
+                    // Ignore Apple Pay errors, just don't show the button
+                }
 
-                    // Google Pay
+                // Try to add Google Pay button, but don't fail if not available
+                try {
                     if (await squarePayments.googlePay?.isSupported()) {
                         googlePay = await squarePayments.googlePay();
                         const googleBtn = document.createElement('button');
@@ -692,20 +704,24 @@
                         };
                         walletButtons.appendChild(googleBtn);
                     }
+                } catch (e) {
+                    // Ignore Google Pay errors, just don't show the button
+                }
 
-                    // Card
+                // Always initialize card form
+                try {
                     card = await squarePayments.card();
                     await card.attach('#card-container');
-
-                    // Hide spinner, show form
-                    document.getElementById('square-loading-spinner').style.display = 'none';
-                    document.getElementById('square-payment-form').classList.remove('hidden');
                 } catch (e) {
-                    errorDiv.textContent = 'Failed to initialize Square payment form.';
+                    errorDiv.textContent = 'Failed to initialize card form.';
                     errorDiv.classList.remove('hidden');
                     document.getElementById('square-loading-spinner').style.display = 'none';
                     return;
                 }
+
+                // Hide spinner, show form
+                document.getElementById('square-loading-spinner').style.display = 'none';
+                document.getElementById('square-payment-form').classList.remove('hidden');
 
                 cardButton.onclick = async function (e) {
                     e.preventDefault();

@@ -1,4 +1,4 @@
-const { Order, Admin } = require('../models');
+const { Order, Admin, User } = require('../models');
 const EmailService = require('../services/emailService');
 const S3Service = require('../services/s3Service');
 const jwt = require('jsonwebtoken');

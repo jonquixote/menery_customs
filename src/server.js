@@ -26,7 +26,13 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "https://www.paypal.com", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "https://js.paypal.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
       styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+          "https://cdnjs.cloudflare.com",
+          "https://square-fonts-production-f.squarecdn.com",
+          "https://d1g145x70srn7h.cloudfront.net"
+        ],
         imgSrc: ["'self'", "data:", "https://sandbox.web.squarecdn.com"],
       mediaSrc: ["'self'", "blob:"],
       frameSrc: ["'self'", "https://sandbox.web.squarecdn.com"],

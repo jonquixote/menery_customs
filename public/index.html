@@ -199,6 +199,10 @@
             align-items: center;
         }
 
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
         .modal-content {
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
@@ -242,9 +246,21 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
+
+        /* Loader spinner for Square modal */
+        .loader {
+          border: 4px solid #FFD70033;
+          border-top: 4px solid #FFD700;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto;
+        }
     </style>
 </head>
 <body class="bg-dark-bg">
+
 
     <header class="text-center py-8 px-4">
         <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mb-3">
@@ -272,7 +288,6 @@
                     <div class="form-group text-center md:text-left"><label for="phone" class="form-label"><i class="fas fa-phone mr-2"></i>Phone Number</label><input type="tel" id="phone" name="phone" class="form-input" placeholder="e.g., (555) 123-4567" required></div>
                 </div>
                 <div class="form-group text-center md:text-left"><label for="script" class="form-label"><i class="fas fa-scroll mr-2"></i>Your Script (Optional)</label><textarea id="script" name="script" class="form-textarea h-32" placeholder="Enter the text you want Bob to read. If left blank, Bob will improvise."></textarea></div>
-                
                 <div class="form-group text-center md:text-left">
                     <label class="form-label"><i class="fas fa-video mr-2"></i>Upload Your Video</label>
                     <div class="file-upload-area" id="fileUploadArea">
@@ -336,18 +351,34 @@
         </div>
     </div>
 
-    <!-- Square Card Payment Modal -->
+    <!-- Square Card Payment Modal (hidden by default) -->
     <div class="modal-overlay hidden" id="squarePaymentModalOverlay">
-        <div class="modal-content">
-            <button type="button" class="modal-close-btn" id="closeSquareModalBtn">&times;</button>
-            <h2 class="text-2xl font-bold mb-4">Enter Card Details</h2>
-            <form id="square-payment-form">
-                <div id="card-container"></div>
-                <button id="card-button" type="button" class="payment-btn w-full bg-green-600 h-16 flex items-center justify-center text-lg mt-4">Pay Now</button>
-            </form>
-            <div id="squarePaymentError" class="error-message hidden"></div>
+      <div class="modal-content glass-card relative max-w-lg w-full p-8 md:p-10 text-center border-2 border-primary-gold shadow-2xl">
+        <button type="button" class="modal-close-btn absolute top-4 right-4 text-3xl" id="closeSquareModalBtn" aria-label="Close">&times;</button>
+        <div class="flex flex-col items-center mb-4">
+          <img src="/favicon_io/android-chrome-192x192.png" alt="Site Logo" class="w-16 h-16 mb-2 rounded-full border-2 border-primary-gold bg-black/30">
+          <span class="text-primary-gold font-bold text-lg tracking-widest mb-1">Secured by Square</span>
+          <span class="inline-flex items-center gap-2 text-green-400 text-sm mb-2"><i class="fas fa-lock"></i> SSL Encrypted</span>
         </div>
+        <h2 class="text-3xl font-extrabold mb-2 text-primary-gold">Pay with Card or Digital Wallet</h2>
+        <p class="text-text-secondary mb-6">We accept all major cards, Apple Pay, and Google Pay. Your payment is safe and encrypted.</p>
+        <div id="square-loading-spinner" class="flex flex-col items-center justify-center py-8">
+         <div class="loader mb-2 hidden"></div>
+          <span class="text-text-secondary text-sm">Loading secure payment options...</span>
+        </div>
+        <form id="square-payment-form" class="space-y-4 hidden">
+          <div id="wallet-buttons" class="flex flex-col gap-3 mb-2"></div>
+          <div id="card-container" class="mb-2"></div>
+          <button id="card-button" type="button" class="payment-btn w-full bg-green-600 h-14 flex items-center justify-center text-lg mt-2">Pay Now</button>
+        </form>
+        <div id="squarePaymentError" class="error-message hidden"></div>
+        <div class="mt-6 flex flex-col items-center gap-2">
+          <img src="https://sandbox.web.squarecdn.com/v1/logo-square.svg" alt="Square Logo" class="h-6 mb-1">
+          <span class="text-xs text-text-secondary">Payments processed securely by Square</span>
+        </div>
+      </div>
     </div>
+
 
     <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
     <script id="paypal-sdk" src="https://www.paypal.com/sdk/js?client-id=ASYoB6I28TkHKT8P_alVYSOLsw3qI1TG5SHV8zEu8TparhBHCGupiPykL9N8WA--fJ96u2IiOBJ57voQ&currency=USD&components=buttons&enable-funding=venmo,paylater,card"></script>
@@ -579,23 +610,26 @@
 
             // Show the Square Card Payment Modal for Test
             function openSquareTestModal() {
-                // Set up the modal for the selected order
                 const overlay = document.getElementById('squarePaymentModalOverlay');
                 if (overlay) {
                     overlay.classList.remove('hidden');
-                    // Initialize Square Web Payments SDK if not already initialized
+                    // Show loading spinner, hide form
+                    document.getElementById('square-loading-spinner').style.display = 'flex';
+                    document.getElementById('square-payment-form').classList.add('hidden');
                     setupSquareCardForm();
                 }
             }
 
             // --- Square Web Payments SDK Integration ---
-            let squarePayments, card;
+            let squarePayments, card, applePay, googlePay;
             async function setupSquareCardForm() {
                 const cardContainer = document.getElementById('card-container');
                 const cardButton = document.getElementById('card-button');
                 const errorDiv = document.getElementById('squarePaymentError');
+                const walletButtons = document.getElementById('wallet-buttons');
                 // Clear previous form
                 cardContainer.innerHTML = '';
+                walletButtons.innerHTML = '';
                 errorDiv.classList.add('hidden');
                 errorDiv.textContent = '';
 
@@ -605,16 +639,71 @@
                 if (!appId || !locationId) {
                     errorDiv.textContent = 'Square App ID or Location ID not set.';
                     errorDiv.classList.remove('hidden');
+                    document.getElementById('square-loading-spinner').style.display = 'none';
+                    return;
+                }
+
+                if (!window.Square || !window.Square.payments) {
+                    errorDiv.textContent = 'Square Web Payments SDK failed to load. Please check your network connection or try refreshing the page.';
+                    errorDiv.classList.remove('hidden');
+                    document.getElementById('square-loading-spinner').style.display = 'none';
                     return;
                 }
 
                 try {
                     squarePayments = window.Square.payments(appId, locationId);
+
+                    // Apple Pay
+                    if (await squarePayments.applePay?.isSupported()) {
+                        applePay = await squarePayments.applePay();
+                        const appleBtn = document.createElement('button');
+                        appleBtn.type = 'button';
+                        appleBtn.className = 'payment-btn w-full h-12 flex items-center justify-center bg-black text-white font-bold text-lg rounded-lg mb-2';
+                        appleBtn.innerHTML = '<img src="https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/apple-pay-mark.svg" alt="Apple Pay" class="h-6 mr-2">Pay with Apple Pay';
+                        appleBtn.onclick = async function() {
+                            try {
+                                const result = await applePay.tokenize();
+                                if (result.status !== 'OK') throw new Error(result.errors?.[0]?.message || 'Apple Pay failed.');
+                                await handleSquarePayment(result.token, 'Apple Pay');
+                            } catch (err) {
+                                errorDiv.textContent = err.message;
+                                errorDiv.classList.remove('hidden');
+                            }
+                        };
+                        walletButtons.appendChild(appleBtn);
+                    }
+
+                    // Google Pay
+                    if (await squarePayments.googlePay?.isSupported()) {
+                        googlePay = await squarePayments.googlePay();
+                        const googleBtn = document.createElement('button');
+                        googleBtn.type = 'button';
+                        googleBtn.className = 'payment-btn w-full h-12 flex items-center justify-center bg-white text-black font-bold text-lg rounded-lg border border-gray-300 mb-2';
+                        googleBtn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Pay" class="h-6 mr-2">Pay with Google Pay';
+                        googleBtn.onclick = async function() {
+                            try {
+                                const result = await googlePay.tokenize();
+                                if (result.status !== 'OK') throw new Error(result.errors?.[0]?.message || 'Google Pay failed.');
+                                await handleSquarePayment(result.token, 'Google Pay');
+                            } catch (err) {
+                                errorDiv.textContent = err.message;
+                                errorDiv.classList.remove('hidden');
+                            }
+                        };
+                        walletButtons.appendChild(googleBtn);
+                    }
+
+                    // Card
                     card = await squarePayments.card();
                     await card.attach('#card-container');
+
+                    // Hide spinner, show form
+                    document.getElementById('square-loading-spinner').style.display = 'none';
+                    document.getElementById('square-payment-form').classList.remove('hidden');
                 } catch (e) {
-                    errorDiv.textContent = 'Failed to initialize Square card form.';
+                    errorDiv.textContent = 'Failed to initialize Square payment form.';
                     errorDiv.classList.remove('hidden');
+                    document.getElementById('square-loading-spinner').style.display = 'none';
                     return;
                 }
 
@@ -628,60 +717,7 @@
                         if (result.status !== 'OK') {
                             throw new Error(result.errors?.[0]?.message || 'Card tokenization failed.');
                         }
-                        // Gather order info
-                        const firstName = document.getElementById('firstName').value.trim();
-                        const lastName = document.getElementById('lastName').value.trim();
-                        const email = document.getElementById('email').value.trim();
-                        const phone = document.getElementById('phone').value.trim();
-                        const script = document.getElementById('script').value.trim();
-                        const duration = selectedDuration;
-                        const amount = selectedPrice;
-                        if (!firstName || !lastName || !email || !phone || !uploadedFile || !duration || !amount) {
-                            throw new Error('Please complete all required fields and upload a video.');
-                        }
-                        // Create order first (if not already created)
-                        const formData = new FormData();
-                        formData.append('name', firstName + ' ' + lastName);
-                        formData.append('email', email);
-                        formData.append('phone', phone);
-                        formData.append('script', script);
-                        formData.append('duration', duration);
-                        formData.append('amount', amount);
-                        formData.append('paymentMethod', 'square');
-                        formData.append('video', uploadedFile);
-                        formData.append('status', 'clicked');
-                        formData.append('isTest', 'true');
-
-                        // Create order and get orderId
-                        let orderId;
-                        try {
-                            const orderRes = await fetch('/api/orders', { method: 'POST', body: formData });
-                            const orderJson = await orderRes.json();
-                            if (!orderRes.ok || !orderJson.orderId) {
-                                throw new Error(orderJson.error || 'Failed to create order.');
-                            }
-                            orderId = orderJson.orderId;
-                        } catch (err) {
-                            throw new Error('Order creation failed: ' + err.message);
-                        }
-
-                        // Call backend to process Square payment
-                        const paymentRes = await fetch('/api/payments/process-square-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                sourceId: result.token,
-                                orderId: orderId,
-                                amount: Math.round(Number(amount) * 100)
-                            })
-                        });
-                        const paymentJson = await paymentRes.json();
-                        if (!paymentRes.ok || !paymentJson.success) {
-                            throw new Error(paymentJson.error || 'Payment failed.');
-                        }
-                        // Success!
-                        document.getElementById('squarePaymentModalOverlay').classList.add('hidden');
-                        showSuccessModal('Square (Card)');
+                        await handleSquarePayment(result.token, 'Card');
                     } catch (err) {
                         errorDiv.textContent = err.message;
                         errorDiv.classList.remove('hidden');
@@ -689,6 +725,70 @@
                         cardButton.disabled = false;
                     }
                 };
+            }
+
+            // Handles payment for all Square methods
+            async function handleSquarePayment(token, methodLabel) {
+                const errorDiv = document.getElementById('squarePaymentError');
+                try {
+                    // Gather order info
+                    const firstName = document.getElementById('firstName').value.trim();
+                    const lastName = document.getElementById('lastName').value.trim();
+                    const email = document.getElementById('email').value.trim();
+                    const phone = document.getElementById('phone').value.trim();
+                    const script = document.getElementById('script').value.trim();
+                    const duration = selectedDuration;
+                    const amount = selectedPrice;
+                    if (!firstName || !lastName || !email || !phone || !uploadedFile || !duration || !amount) {
+                        throw new Error('Please complete all required fields and upload a video.');
+                    }
+                    // Create order first (if not already created)
+                    const formData = new FormData();
+                    formData.append('name', firstName + ' ' + lastName);
+                    formData.append('email', email);
+                    formData.append('phone', phone);
+                    formData.append('script', script);
+                    formData.append('duration', duration);
+                    formData.append('amount', amount);
+                    formData.append('paymentMethod', 'square');
+                    formData.append('video', uploadedFile);
+                    formData.append('status', 'clicked');
+                    formData.append('isTest', 'true');
+
+                    // Create order and get orderId
+                    let orderId;
+                    try {
+                        const orderRes = await fetch('/api/orders', { method: 'POST', body: formData });
+                        const orderJson = await orderRes.json();
+                        if (!orderRes.ok || !orderJson.orderId) {
+                            throw new Error(orderJson.error || 'Failed to create order.');
+                        }
+                        orderId = orderJson.orderId;
+                    } catch (err) {
+                        throw new Error('Order creation failed: ' + err.message);
+                    }
+
+                    // Call backend to process Square payment
+                    const paymentRes = await fetch('/api/payments/process-square-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sourceId: token,
+                            orderId: orderId,
+                            amount: Math.round(Number(amount) * 100)
+                        })
+                    });
+                    const paymentJson = await paymentRes.json();
+                    if (!paymentRes.ok || !paymentJson.success) {
+                        throw new Error(paymentJson.error || 'Payment failed.');
+                    }
+                    // Success!
+                    document.getElementById('squarePaymentModalOverlay').classList.add('hidden');
+                    showSuccessModal('Square (' + methodLabel + ')');
+                } catch (err) {
+                    errorDiv.textContent = err.message;
+                    errorDiv.classList.remove('hidden');
+                }
             }
 
             // Close modal on close button

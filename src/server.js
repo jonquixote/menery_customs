@@ -29,7 +29,21 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:"],
       mediaSrc: ["'self'", "blob:"],
-      connectSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://js.squareupsandbox.com", "https://sandbox.web.squarecdn.com", `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`, "https://squareup.com", "https://api-m.sandbox.paypal.com", "https://api-m.paypal.com", "https://www.sandbox.paypal.com"],
+      frameSrc: ["'self'", "https://sandbox.web.squarecdn.com"],
+      childSrc: ["'self'", "https://sandbox.web.squarecdn.com"],
+      connectSrc: [
+        "'self'",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://js.squareupsandbox.com",
+        "https://sandbox.web.squarecdn.com",
+        `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+        "https://squareup.com",
+        "https://api-m.sandbox.paypal.com",
+        "https://api-m.paypal.com",
+        "https://www.sandbox.paypal.com",
+        "https://pci-connect.squareupsandbox.com"
+      ],
     },
   },
 }));

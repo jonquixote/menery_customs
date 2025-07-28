@@ -34,9 +34,19 @@ app.use(helmet({
   },
 }));
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://menery-customs.vercel.app'
-    : ['http://localhost:3000', `http://localhost:${PORT}`],
+  origin: (origin, callback) => {
+    if (process.env.NODE_ENV === 'production') {
+      // Only allow production frontend
+      callback(null, 'https://menery-customs.vercel.app');
+    } else {
+      // Only allow local frontend
+      if (!origin || origin.startsWith('http://localhost:3000')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true
 }));
 

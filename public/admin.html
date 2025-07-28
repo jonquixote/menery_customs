@@ -101,7 +101,10 @@
             async function fetchOrders(token) {
                 try {
                     const response = await fetch(`${apiBase}/api/admin/orders`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                            'Content-Type': 'application/json'
+                        }
                     });
 
                     if (response.ok) {

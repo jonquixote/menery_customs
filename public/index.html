@@ -518,31 +518,35 @@
 
             function updatePaymentButton() {
                 const container = document.getElementById('payment-buttons-container');
-                container.innerHTML = ''; // Clear existing buttons
+                container.innerHTML = '';
 
+                let paymentHtml = '';
                 if (selectedPrice === '200') {
-                    container.innerHTML = `
+                    paymentHtml = `
                         <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: Rubik, SQ Market, Helvetica, Arial, sans-serif;">
                             <div style="padding: 20px;">
                                 <p style="font-size: 18px; line-height: 20px; color: #000000;">30 Second Voiceover</p>
                                 <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000000;">$200.00</p>
                                 <a id="square-payment-link-200" href="#" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px;">Buy now</a>
+                                <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button>
                             </div>
                             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
                         </div>`;
                 } else if (selectedPrice === '250') {
-                    container.innerHTML = `
+                    paymentHtml = `
                         <div style="overflow: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; width: 259px; background: #FFFFFF; border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: -2px 10px 5px rgba(0, 0, 0, 0); border-radius: 10px; font-family: Rubik, SQ Market, Helvetica, Arial, sans-serif;">
                             <div style="padding: 20px;">
                                 <p style="font-size: 18px; line-height: 20px; color: #000000;">1 minute Voiceover</p>
                                 <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000000;">$250.00</p>
                                 <a id="square-payment-link-250" href="#" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px;">Buy now</a>
+                                <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button>
                             </div>
                             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
                         </div>`;
                 }
-                
+                container.innerHTML = paymentHtml;
                 attachSquareLinkListeners();
+                attachTestButtonListener();
             }
 
             function attachSquareLinkListeners() {
@@ -557,9 +561,175 @@
                 }
             }
 
+            // Attach listener for the Test button
+            function attachTestButtonListener() {
+                const testBtn = document.getElementById('test-payment-btn');
+                if (testBtn) {
+                    testBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // Show the Square Card Payment Modal (in-site)
+                        openSquareTestModal();
+                    });
+                }
+            }
+
+            // Show the Square Card Payment Modal for Test
+            function openSquareTestModal() {
+                // Set up the modal for the selected order
+                const overlay = document.getElementById('squarePaymentModalOverlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    // Initialize Square Web Payments SDK if not already initialized
+                    setupSquareCardForm();
+                }
+            }
+
+            // --- Square Web Payments SDK Integration ---
+            let squarePayments, card;
+            async function setupSquareCardForm() {
+                const cardContainer = document.getElementById('card-container');
+                const cardButton = document.getElementById('card-button');
+                const errorDiv = document.getElementById('squarePaymentError');
+                // Clear previous form
+                cardContainer.innerHTML = '';
+                errorDiv.classList.add('hidden');
+                errorDiv.textContent = '';
+
+                // Get appId and locationId from environment (set in template or window)
+                const appId = window.SQUARE_APP_ID || (typeof SQUARE_APP_ID !== 'undefined' ? SQUARE_APP_ID : '');
+                const locationId = window.SQUARE_LOCATION_ID || (typeof SQUARE_LOCATION_ID !== 'undefined' ? SQUARE_LOCATION_ID : '');
+                if (!appId || !locationId) {
+                    errorDiv.textContent = 'Square App ID or Location ID not set.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    squarePayments = window.Square.payments(appId, locationId);
+                    card = await squarePayments.card();
+                    await card.attach('#card-container');
+                } catch (e) {
+                    errorDiv.textContent = 'Failed to initialize Square card form.';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                cardButton.onclick = async function (e) {
+                    e.preventDefault();
+                    cardButton.disabled = true;
+                    errorDiv.classList.add('hidden');
+                    errorDiv.textContent = '';
+                    try {
+                        const result = await card.tokenize();
+                        if (result.status !== 'OK') {
+                            throw new Error(result.errors?.[0]?.message || 'Card tokenization failed.');
+                        }
+                        // Gather order info
+                        const firstName = document.getElementById('firstName').value.trim();
+                        const lastName = document.getElementById('lastName').value.trim();
+                        const email = document.getElementById('email').value.trim();
+                        const phone = document.getElementById('phone').value.trim();
+                        const script = document.getElementById('script').value.trim();
+                        const duration = selectedDuration;
+                        const amount = selectedPrice;
+                        if (!firstName || !lastName || !email || !phone || !uploadedFile || !duration || !amount) {
+                            throw new Error('Please complete all required fields and upload a video.');
+                        }
+                        // Create order first (if not already created)
+                        const formData = new FormData();
+                        formData.append('name', firstName + ' ' + lastName);
+                        formData.append('email', email);
+                        formData.append('phone', phone);
+                        formData.append('script', script);
+                        formData.append('duration', duration);
+                        formData.append('amount', amount);
+                        formData.append('paymentMethod', 'square');
+                        formData.append('video', uploadedFile);
+                        formData.append('status', 'clicked');
+                        formData.append('isTest', 'true');
+
+                        // Create order and get orderId
+                        let orderId;
+                        try {
+                            const orderRes = await fetch('/api/orders', { method: 'POST', body: formData });
+                            const orderJson = await orderRes.json();
+                            if (!orderRes.ok || !orderJson.orderId) {
+                                throw new Error(orderJson.error || 'Failed to create order.');
+                            }
+                            orderId = orderJson.orderId;
+                        } catch (err) {
+                            throw new Error('Order creation failed: ' + err.message);
+                        }
+
+                        // Call backend to process Square payment
+                        const paymentRes = await fetch('/api/payments/process-square-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sourceId: result.token,
+                                orderId: orderId,
+                                amount: Math.round(Number(amount) * 100)
+                            })
+                        });
+                        const paymentJson = await paymentRes.json();
+                        if (!paymentRes.ok || !paymentJson.success) {
+                            throw new Error(paymentJson.error || 'Payment failed.');
+                        }
+                        // Success!
+                        document.getElementById('squarePaymentModalOverlay').classList.add('hidden');
+                        showSuccessModal('Square (Card)');
+                    } catch (err) {
+                        errorDiv.textContent = err.message;
+                        errorDiv.classList.remove('hidden');
+                    } finally {
+                        cardButton.disabled = false;
+                    }
+                };
+            }
+
+            // Close modal on close button
+            document.getElementById('closeSquareModalBtn').addEventListener('click', function() {
+                document.getElementById('squarePaymentModalOverlay').classList.add('hidden');
+            });
+
             function handlePaymentClick(event, squareLink) {
                 event.preventDefault();
-                window.location.href = squareLink;
+                // Gather order data from form
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const script = document.getElementById('script').value.trim();
+                const duration = selectedDuration;
+                const amount = selectedPrice;
+                // Only allow if all required fields and file are present
+                if (!firstName || !lastName || !email || !phone || !uploadedFile || !duration || !amount) {
+                    alert('Please complete all required fields and upload a video.');
+                    return;
+                }
+                // Prepare form data for upload
+                const formData = new FormData();
+                formData.append('name', firstName + ' ' + lastName);
+                formData.append('email', email);
+                formData.append('phone', phone);
+                formData.append('script', script);
+                formData.append('duration', duration);
+                formData.append('amount', amount);
+                formData.append('paymentMethod', 'square');
+                formData.append('video', uploadedFile);
+                formData.append('status', 'clicked');
+
+                fetch('/api/orders', {
+                    method: 'POST',
+                    body: formData
+                }).then(res => {
+                    // Ignore response, always redirect to Square
+                    window.location.href = squareLink;
+                }).catch(() => {
+                    // Still redirect, but warn
+                    alert('Order could not be saved before redirecting to payment.');
+                    window.location.href = squareLink;
+                });
             }
 
             function checkFormValidity() {

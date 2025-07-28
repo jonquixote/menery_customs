@@ -5,45 +5,6 @@ const PaypalService = require('../services/paypalService');
 const { v4: uuidv4 } = require('uuid');
 
 class OrderController {
-  static async initiateUpload(req, res) {
-    try {
-      const { fileName, fileType } = req.body;
-
-      // Validate input
-      if (!fileName || !fileType) {
-        return res.status(400).json({ 
-          error: 'fileName and fileType are required' 
-        });
-      }
-
-      // Validate file type (only allow video files)
-      const allowedTypes = [
-        'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 
-        'video/flv', 'video/webm', 'video/mkv'
-      ];
-      
-      if (!allowedTypes.includes(fileType.toLowerCase())) {
-        return res.status(400).json({ 
-          error: 'Invalid file type. Only video files are allowed.' 
-        });
-      }
-
-      // Generate pre-signed URL
-      const { preSignedUrl, objectKey } = await S3Service.generatePreSignedUrl(fileName, fileType);
-
-      res.json({
-        preSignedUrl,
-        objectKey,
-        message: 'Upload URL generated successfully'
-      });
-
-    } catch (error) {
-      console.error('Error in initiateUpload:', error);
-      res.status(500).json({ 
-        error: 'Failed to generate upload URL' 
-      });
-    }
-  }
 
   static async createOrder(req, res) {
     try {
@@ -165,7 +126,7 @@ class OrderController {
         customerName: name,
         customerEmail: customerEmail,
         customerPhone: phone,
-        status: 'pending',
+        status: req.body.status || 'pending',
         price: parseFloat(amount) || 0,
         duration: parseInt(duration) || 0,
         paymentStatus: 'pending',

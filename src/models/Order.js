@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     autoIncrement: true
   },
   status: {
-    type: DataTypes.ENUM('pending', 'paid', 'processing', 'complete'),
+    type: DataTypes.ENUM('clicked', 'unfulfilled', 'pending', 'paid', 'processing', 'complete'),
     allowNull: false,
     defaultValue: 'pending'
   },

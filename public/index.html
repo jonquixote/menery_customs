@@ -857,7 +857,6 @@
                 const script = document.getElementById('script').value.trim();
                 const duration = selectedDuration;
                 const amount = selectedPrice;
-                // Only allow if all required fields and file are present
                 if (!firstName || !lastName || !email || !phone || !uploadedFile || !duration || !amount) {
                     alert('Please complete all required fields and upload a video.');
                     return;
@@ -892,32 +891,59 @@
                     uploadModal.style.display = 'flex';
                 }
 
-                // Prepare form data for upload
-                const formData = new FormData();
-                formData.append('name', firstName + ' ' + lastName);
-                formData.append('email', email);
-                formData.append('phone', phone);
-                formData.append('script', script);
-                formData.append('duration', duration);
-                formData.append('amount', amount);
-                formData.append('paymentMethod', 'square');
-                formData.append('video', uploadedFile);
-                formData.append('status', 'clicked');
-
                 const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-                fetch(apiBase + '/api/orders', {
+                // Step 1: Initiate S3 upload
+                fetch(apiBase + '/api/upload/initiate', {
                     method: 'POST',
-                    body: formData
-                }).then(res => {
-                    // Hide animation
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: uploadedFile.name,
+                        fileType: uploadedFile.type,
+                        fileSize: uploadedFile.size,
+                        duration: duration
+                    })
+                })
+                .then(res => res.json())
+                .then(uploadInit => {
+                    if (!uploadInit.uploadUrl || !uploadInit.key) throw new Error('Failed to get upload URL');
+                    // Step 2: Upload video to S3
+                    return fetch(uploadInit.uploadUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': uploadedFile.type },
+                        body: uploadedFile
+                    }).then(s3Res => {
+                        if (!s3Res.ok) throw new Error('Failed to upload video to S3');
+                        return uploadInit.key;
+                    });
+                })
+                .then(videoKey => {
+                    // Step 3: Create order with S3 key
+                    const orderData = {
+                        name: firstName + ' ' + lastName,
+                        email: email,
+                        phone: phone,
+                        script: script,
+                        duration: duration,
+                        amount: amount,
+                        paymentMethod: 'square',
+                        videoKey: videoKey,
+                        status: 'clicked'
+                    };
+                    return fetch(apiBase + '/api/orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    });
+                })
+                .then(orderRes => {
+                    if (!orderRes.ok) throw new Error('Order creation failed');
+                    // Step 4: Redirect to Square
                     uploadModal.style.display = 'none';
-                    // Always redirect to Square
                     window.location.href = squareLink;
-                }).catch(() => {
-                    // Hide animation
+                })
+                .catch(err => {
                     uploadModal.style.display = 'none';
-                    // Still redirect, but warn
-                    alert('Order could not be saved before redirecting to payment.');
+                    alert('Error: ' + (err.message || 'Order could not be saved before redirecting to payment.'));
                     window.location.href = squareLink;
                 });
             }

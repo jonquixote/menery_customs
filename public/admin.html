@@ -320,7 +320,7 @@
                             'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ filename: file.name, contentType: file.type })
+                        body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size })
                     });
                     if (!res.ok) throw new Error('Failed to get upload URL');
                     const { uploadUrl, key } = await res.json();

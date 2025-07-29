@@ -93,8 +93,10 @@
                             <input id="order-amount" type="number" min="0" required class="w-full px-3 py-2 border rounded">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Video Key</label>
-                            <input id="order-video" type="text" class="w-full px-3 py-2 border rounded">
+                            <label class="block text-sm font-medium text-gray-700">Video Upload</label>
+                            <input id="order-video-file" type="file" accept="video/*" class="w-full px-3 py-2 border rounded">
+                            <div id="order-video-upload-status" class="text-xs text-gray-500 mt-1"></div>
+                            <input id="order-video" type="hidden">
                         </div>
                         <div class="flex justify-end gap-2 mt-6">
                             <button type="button" id="order-cancel-btn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
@@ -295,6 +297,38 @@
                     }
                 } catch (err) {
                     alert('Error saving order.');
+                }
+            });
+            // S3 upload logic for video
+            const videoFileInput = document.getElementById('order-video-file');
+            const videoUploadStatus = document.getElementById('order-video-upload-status');
+            videoFileInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                videoUploadStatus.textContent = 'Uploading...';
+                try {
+                    // Step 1: Get S3 upload URL from backend
+                    const res = await fetch(`${apiBase}/api/upload/initiate`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ filename: file.name, contentType: file.type })
+                    });
+                    if (!res.ok) throw new Error('Failed to get upload URL');
+                    const { uploadUrl, key } = await res.json();
+                    // Step 2: Upload to S3
+                    const uploadRes = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        body: file
+                    });
+                    if (!uploadRes.ok) throw new Error('Failed to upload to S3');
+                    // Step 3: Set video key for order
+                    document.getElementById('order-video').value = key;
+                    videoUploadStatus.textContent = 'Upload successful!';
+                } catch (err) {
+                    videoUploadStatus.textContent = 'Upload failed.';
                 }
             });
         }

@@ -11,20 +11,24 @@ class AdminController {
   static async createOrder(req, res) {
     try {
       const { customerName, status, price, originalVideoKey } = req.body;
-      if (!customerName || !status || typeof price !== 'number') {
-        return res.status(400).json({ error: 'Missing required fields' });
+      if (!customerName || !status || price === undefined || isNaN(Number(price)) || !originalVideoKey) {
+        return res.status(400).json({ error: 'Missing required fields. Video must be uploaded first.' });
       }
-      // Create order
+      // Create order with video key (matches buy order test flow)
       const order = await Order.create({
         customerName,
         status,
-        price,
+        price: Number(price),
         originalVideoKey
       });
       // Generate video URL if key exists
       let videoUrl = null;
-      if (originalVideoKey) {
-        videoUrl = await S3Service.generateDownloadUrl(originalVideoKey);
+      if (order.originalVideoKey) {
+        try {
+          videoUrl = await S3Service.generateDownloadUrl(order.originalVideoKey);
+        } catch (err) {
+          console.error('Error generating video URL:', err);
+        }
       }
       res.json({
         message: 'Order created successfully',
@@ -35,7 +39,7 @@ class AdminController {
       });
     } catch (error) {
       console.error('Error creating order:', error);
-      res.status(500).json({ error: 'Failed to create order' });
+      res.status(500).json({ error: 'Failed to create order', details: error.message });
     }
   }
 

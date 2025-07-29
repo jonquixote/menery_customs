@@ -93,11 +93,18 @@
                             <input id="order-amount" type="number" min="0" required class="w-full px-3 py-2 border rounded">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Video Upload</label>
-                            <input id="order-video-file" type="file" accept="video/*" class="w-full px-3 py-2 border rounded">
-                            <div id="order-video-upload-status" class="text-xs text-gray-500 mt-1 flex items-center gap-2"></div>
-                            <div id="order-video-progress-container" class="w-full h-2 bg-gray-200 rounded mt-1 hidden">
-                              <div id="order-video-progress-bar" class="h-2 bg-indigo-500 rounded" style="width:0%"></div>
+                            <label class="block text-sm font-medium text-gray-700">Video</label>
+                            <div id="order-video-current-container" class="mb-2 hidden">
+                              <span id="order-video-current-label" class="text-xs text-gray-500">Current Video:</span>
+                              <a id="order-video-current-link" href="#" target="_blank" class="text-indigo-600 underline ml-2">View</a>
+                              <button type="button" id="order-video-replace-btn" class="ml-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs">Replace Video</button>
+                            </div>
+                            <div id="order-video-upload-container">
+                              <input id="order-video-file" type="file" accept="video/*" class="w-full px-3 py-2 border rounded">
+                              <div id="order-video-upload-status" class="text-xs text-gray-500 mt-1 flex items-center gap-2"></div>
+                              <div id="order-video-progress-container" class="w-full h-2 bg-gray-200 rounded mt-1 hidden">
+                                <div id="order-video-progress-bar" class="h-2 bg-indigo-500 rounded" style="width:0%"></div>
+                              </div>
                             </div>
                             <input id="order-video" type="hidden">
                         </div>
@@ -377,6 +384,10 @@
             const videoUploadStatus = document.getElementById('order-video-upload-status');
             const videoProgressContainer = document.getElementById('order-video-progress-container');
             const videoProgressBar = document.getElementById('order-video-progress-bar');
+            const videoCurrentContainer = document.getElementById('order-video-current-container');
+            const videoCurrentLink = document.getElementById('order-video-current-link');
+            const videoReplaceBtn = document.getElementById('order-video-replace-btn');
+            const videoUploadContainer = document.getElementById('order-video-upload-container');
             if (mode === 'edit') {
                 orderModalTitle.textContent = 'Edit Order';
                 document.getElementById('order-id').value = data.id || '';
@@ -384,14 +395,22 @@
                 document.getElementById('order-status').value = data.status || 'pending';
                 document.getElementById('order-amount').value = data.amount || 0;
                 document.getElementById('order-video').value = data.video || '';
-                // Show video link if available
                 videoUploadStatus.textContent = '';
                 videoProgressContainer.classList.add('hidden');
                 videoProgressBar.style.width = '0%';
+                // Show current video if available
                 if (data.video && data.videoUrl) {
-                  videoUploadStatus.innerHTML = `<a href="${data.videoUrl}" target="_blank" class="text-indigo-600 underline ml-2">View Current Video</a>`;
+                  videoCurrentContainer.classList.remove('hidden');
+                  videoCurrentLink.href = data.videoUrl;
+                  videoCurrentLink.textContent = 'View Current Video';
+                  videoUploadContainer.style.display = 'none';
+                  videoReplaceBtn.onclick = function() {
+                    videoUploadContainer.style.display = '';
+                    videoCurrentContainer.classList.add('hidden');
+                  };
                 } else {
-                  videoUploadStatus.textContent = 'No video uploaded.';
+                  videoCurrentContainer.classList.add('hidden');
+                  videoUploadContainer.style.display = '';
                 }
             } else {
                 orderModalTitle.textContent = 'Create Order';
@@ -403,6 +422,8 @@
                 videoUploadStatus.textContent = '';
                 videoProgressContainer.classList.add('hidden');
                 videoProgressBar.style.width = '0%';
+                videoCurrentContainer.classList.add('hidden');
+                videoUploadContainer.style.display = '';
             }
         }
         function closeOrderModal() {

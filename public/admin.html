@@ -323,16 +323,20 @@
                         body: JSON.stringify({ fileName: file.name, fileType: file.type, fileSize: file.size })
                     });
                     if (!res.ok) throw new Error('Failed to get upload URL');
-                    const { uploadUrl, key } = await res.json();
+                    const { uploadUrl, key, videoUrl } = await res.json();
                     // Step 2: Upload to S3
                     const uploadRes = await fetch(uploadUrl, {
                         method: 'PUT',
                         body: file
                     });
                     if (!uploadRes.ok) throw new Error('Failed to upload to S3');
-                    // Step 3: Set video key for order
+                    // Step 3: Set video key and video URL for order
                     document.getElementById('order-video').value = key;
                     videoUploadStatus.textContent = 'Upload successful!';
+                    // Optionally show link to video
+                    if (videoUrl) {
+                        videoUploadStatus.innerHTML += ` <a href="${videoUrl}" target="_blank" class="text-indigo-600 underline ml-2">View</a>`;
+                    }
                 } catch (err) {
                     videoUploadStatus.textContent = 'Upload failed.';
                 }

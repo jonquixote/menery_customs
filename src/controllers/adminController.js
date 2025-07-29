@@ -5,7 +5,39 @@ const jwt = require('jsonwebtoken');
 
 const bcrypt = require('bcrypt');
 
+
+
 class AdminController {
+  static async createOrder(req, res) {
+    try {
+      const { customerName, status, price, originalVideoKey } = req.body;
+      if (!customerName || !status || typeof price !== 'number') {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      // Create order
+      const order = await Order.create({
+        customerName,
+        status,
+        price,
+        originalVideoKey
+      });
+      // Generate video URL if key exists
+      let videoUrl = null;
+      if (originalVideoKey) {
+        videoUrl = await S3Service.generateDownloadUrl(originalVideoKey);
+      }
+      res.json({
+        message: 'Order created successfully',
+        order: {
+          ...order.toJSON(),
+          videoUrl
+        }
+      });
+    } catch (error) {
+      console.error('Error creating order:', error);
+      res.status(500).json({ error: 'Failed to create order' });
+    }
+  }
 
   static async deleteOrder(req, res) {
     try {

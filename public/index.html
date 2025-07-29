@@ -262,14 +262,44 @@
         }
 
         /* Loader spinner for Square modal */
-        .loader {
-          border: 4px solid #FFD70033;
-          border-top: 4px solid #FFD700;
+        .modern-loader {
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
+          background: linear-gradient(135deg, #FFD700 0%, #FFAA00 100%);
+          box-shadow: 0 4px 32px 0 rgba(255,215,0,0.18), 0 1.5px 8px 0 rgba(0,0,0,0.12);
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: loader-rotate 1.2s linear infinite;
+        }
+        .modern-loader::before {
+          content: '';
+          position: absolute;
+          top: 8px;
+          left: 8px;
           width: 40px;
           height: 40px;
-          animation: spin 1s linear infinite;
-          margin: 0 auto;
+          border-radius: 50%;
+          background: rgba(16,16,24,0.7);
+          box-shadow: 0 0 0 2px #FFD70044;
+        }
+        .modern-loader::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          border: 4px solid #FFD70033;
+          border-top: 4px solid #FFD700;
+          animation: spin 1.2s cubic-bezier(.68,-0.55,.27,1.55) infinite;
+        }
+        @keyframes loader-rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -377,8 +407,15 @@
         <h2 class="text-3xl font-extrabold mb-2 text-primary-gold">Pay with Card or Digital Wallet</h2>
         <p class="mb-6" style="color:var(--primary-gold);font-weight:600;">We accept all major cards, Apple Pay, and Google Pay. Your payment is safe and encrypted.</p>
         <div id="square-loading-spinner" class="flex flex-col items-center justify-center py-8">
-         <div class="loader mb-2 hidden"></div>
-          <span class="text-primary-gold text-sm font-semibold">Loading secure payment options...</span>
+         <div class="relative flex flex-col items-center justify-center w-full">
+           <div class="modern-loader mb-4"></div>
+           <span class="text-2xl font-bold text-primary-gold mb-2 tracking-wide animate-pulse">Preparing Secure Checkout...</span>
+           <span class="text-sm text-gray-300 mb-2">Your payment is protected by advanced encryption.</span>
+           <div class="flex items-center gap-2 mt-2">
+             <i class="fas fa-shield-halved text-green-400 text-lg animate-bounce"></i>
+             <span class="text-xs text-green-400 font-semibold">SSL & PCI Compliant</span>
+           </div>
+         </div>
         </div>
         <form id="square-payment-form" class="space-y-4 hidden">
           <div id="wallet-buttons" class="flex flex-col gap-3 mb-2"></div>

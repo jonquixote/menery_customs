@@ -319,8 +319,24 @@
         };
         
         const sendWebcamFrameToMediaPipe = async () => {
-            if (state.modelLoaded && state.mediaPipeModel && ui.webcamVideo.readyState >= 4) {
+            // Only run if model is loaded, webcam is ready, and app is active
+            if (!state.modelLoaded || !state.mediaPipeModel) return;
+            if (!state.userMediaStream || !ui.webcamVideo || ui.webcamVideo.readyState < 2) {
+                // Wait for webcam to be ready
+                requestAnimationFrame(sendWebcamFrameToMediaPipe);
+                return;
+            }
+            // If app is not previewing or recording, don't send frames
+            if (!state.isPreviewing && !state.isRecording) {
+                // Only run if greenscreen mode is active
+                if (state.activeMode !== 'greenscreen') return;
+            }
+            try {
                 await state.mediaPipeModel.send({image: ui.webcamVideo});
+            } catch (err) {
+                console.error('MediaPipe send error:', err);
+                // Optionally, show error to user or stop loop
+                return;
             }
             requestAnimationFrame(sendWebcamFrameToMediaPipe);
         };

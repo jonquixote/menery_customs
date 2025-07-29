@@ -6,8 +6,6 @@
     <title>Video Dubbing & Green Screen Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="/libs/selfie_segmentation.js" defer></script>
-    <script src="/libs/RecordRTC.js" defer></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; }
         .loader { border: 4px solid #374151; border-top: 4px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; margin-right: 0.5rem; vertical-align: middle; }
@@ -116,7 +114,8 @@
         #toggle-audio-btn.muted .icon-unmuted { display: none; }
         #toggle-audio-btn.muted .icon-muted { display: block; }
     </style>
-    <!-- Now using self-hosted versions above -->
+    <script src="/libs/selfie_segmentation.js" defer></script>
+    <script src="/libs/RecordRTC.js" defer></script>
 </head>
 <body class="text-white antialiased">
     <!-- UI Elements -->
@@ -241,6 +240,41 @@
                 ui.startBtn.innerHTML = 'Start Studio';
                 ui.startBtn.disabled = false;
             }
+        };
+
+        const handleVideoUpload = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            showStatus('Processing audio...');
+            const fileURL = URL.createObjectURL(file);
+            ui.videoPlayer.src = fileURL;
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                state.videoAudioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
+            } catch (e) {
+                console.error("Error decoding audio data:", e);
+                showStatus("Could not process the audio from this video file. It might be corrupted or in an unsupported format.", true, true);
+                return;
+            }
+
+            ui.videoPlayer.onloadedmetadata = () => {
+                const w = ui.videoPlayer.videoWidth;
+                const h = ui.videoPlayer.videoHeight;
+                ui.mainCanvas.width = w;
+                ui.mainCanvas.height = h;
+                ui.fullscreenCanvas.width = w;
+                ui.fullscreenCanvas.height = h;
+                state.maskCanvas.width = w;
+                state.maskCanvas.height = h;
+                
+                ui.videoPlayer.onseeked = () => renderFrame();
+                ui.videoPlayer.currentTime = 0.01;
+
+                ui.uploadSection.classList.add('hidden');
+                ui.editorSection.classList.remove('hidden');
+                hideStatus();
+            };
         };
         
         const onMediaPipeResults = (results) => {

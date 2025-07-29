@@ -863,7 +863,7 @@
                     return;
                 }
 
-                // Show upload animation/modal
+                // Show modal overlay for upload animation
                 let uploadModal = document.getElementById('uploadingModal');
                 if (!uploadModal) {
                     uploadModal = document.createElement('div');
@@ -873,17 +873,20 @@
                     uploadModal.style.left = '0';
                     uploadModal.style.width = '100vw';
                     uploadModal.style.height = '100vh';
-                    uploadModal.style.background = 'rgba(0,0,0,0.7)';
+                    uploadModal.style.background = 'rgba(0,0,0,0.85)';
                     uploadModal.style.display = 'flex';
                     uploadModal.style.flexDirection = 'column';
                     uploadModal.style.justifyContent = 'center';
                     uploadModal.style.alignItems = 'center';
-                    uploadModal.style.zIndex = '9999';
-                    uploadModal.innerHTML = '<div style="background: #fff; padding: 32px 48px; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.2); display: flex; flex-direction: column; align-items: center;">' +
-                        '<div class="loader" style="border: 8px solid #f3f3f3; border-top: 8px solid #006aff; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 24px;"></div>' +
-                        '<p style="font-size: 20px; color: #333;">Uploading video and creating order...</p>' +
-                        '<style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>' +
-                        '</div>';
+                    uploadModal.style.zIndex = '99999';
+                    uploadModal.innerHTML = `
+                        <div style="background: #fff; padding: 40px 56px; border-radius: 16px; box-shadow: 0 2px 24px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; min-width: 320px;">
+                            <div class="loader" style="border: 10px solid #f3f3f3; border-top: 10px solid #006aff; border-radius: 50%; width: 70px; height: 70px; animation: spin 1s linear infinite; margin-bottom: 32px;"></div>
+                            <p style="font-size: 22px; color: #222; font-weight: 500; margin-bottom: 8px;">Uploading your video...</p>
+                            <p style="font-size: 16px; color: #555;">Please wait while we process your order.</p>
+                            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                        </div>
+                    `;
                     document.body.appendChild(uploadModal);
                 } else {
                     uploadModal.style.display = 'flex';

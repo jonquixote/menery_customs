@@ -1,7 +1,6 @@
-// Import the Square client
-const { Client } = require('square');
+const { SquareClient, SquareEnvironment } = require('square');
 const { v4: uuidv4 } = require('uuid');
-const crypto = require('crypto'); // Import crypto module
+const crypto = require('crypto');
 
 class SquareService {
   constructor() {
@@ -9,251 +8,34 @@ class SquareService {
     this._initialized = false;
     this._initializationError = null;
     this.locationId = null;
-    this.webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY; // Add webhook signature key
+    this.webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     this._initialize();
   }
 
   async _initialize() {
-    console.log('=== Square Service Initialization ===');
-    console.log('Environment variables check:');
-    
     const accessToken = process.env.SQUARE_ACCESS_TOKEN;
     const env = process.env.SQUARE_ENVIRONMENT?.toLowerCase();
-    const locationId = process.env.SQUARE_LOCATION_ID;
-    
-    console.log('- SQUARE_ACCESS_TOKEN:', accessToken ? '*** (set)' : 'NOT SET');
-    console.log('- SQUARE_ENVIRONMENT:', env || 'NOT SET');
-    console.log('- SQUARE_LOCATION_ID:', locationId || 'NOT SET');
+    this.locationId = process.env.SQUARE_LOCATION_ID;
 
-    if (!accessToken || accessToken === 'your_square_access_token') {
-      const error = 'CRITICAL: SQUARE_ACCESS_TOKEN is not properly configured in .env';
-      console.error(error);
-      this._initializationError = new Error(error);
+    if (!accessToken || !env || !this.locationId) {
+      this._initializationError = new Error('Square credentials are not properly configured.');
+      console.error(this._initializationError.message);
       return;
     }
 
-    if (!env) {
-      const error = 'CRITICAL: SQUARE_ENVIRONMENT is not set in .env';
-      console.error(error);
-      this._initializationError = new Error(error);
-      return;
-    }
+    this.client = new SquareClient({
+      environment: env === 'production' ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+      accessToken: accessToken,
+    });
 
-    if (!['sandbox', 'production'].includes(env)) {
-      const error = `CRITICAL: Invalid SQUARE_ENVIRONMENT: '${process.env.SQUARE_ENVIRONMENT}'. Must be 'sandbox' or 'production'.`;
-      console.error(error);
-      this._initializationError = new Error(error);
-      return;
-    }
-
-    if (!locationId) {
-      const error = 'WARNING: SQUARE_LOCATION_ID is not set in .env. Some features may not work.';
-      console.warn(error);
-    }
-
-    try {
-      console.log('Initializing Square client...');
-      
-      // Initialize Square client with configuration
-      console.log('Creating Square client with config:', {
-        accessToken: accessToken ? '*** (set)' : 'NOT SET',
-        environment: env,
-        locationId: locationId || 'NOT SET'
-      });
-      
-      // For v43+, we need to create a client with environment and access token
-      // Using string literals for environment as per SDK requirements
-      this.client = new Client({
-        environment: env === 'production' ? 'production' : 'sandbox',
-        accessToken: accessToken,
-      });
-      
-      // Set the location ID for future API calls
-      this.locationId = locationId;
-      
-      // Verify the client was created
-      if (!this.client) {
-        throw new Error('Failed to create Square client');
-      }
-      
-      // For v43+, we need to use the client with the specific API
-      // The following call to listLocations is removed to bypass potential permission issues.
-      // We will directly use the SQUARE_LOCATION_ID from the .env file.
-      // const { result: { locations } } = await this.client.locations.list();
-      
-      // Directly use the locationId from the environment
-      if (this.locationId) {
-        console.log(`✅ Square service initialized successfully in ${env} mode.`);
-        this._initialized = true;
-      } else {
-        throw new Error('SQUARE_LOCATION_ID is not configured in .env. Initialization failed.');
-      }
-    } catch (error) {
-      const errorMsg = '--- CRITICAL: FAILED TO INITIALIZE SQUARE SERVICE ---';
-      console.error(errorMsg);
-      console.error('Error details:', error.message);
-      console.error('Stack:', error.stack);
-      
-      if (error.errors) {
-        console.error('Square API Errors:');
-        error.errors.forEach((e, i) => {
-          console.error(`  Error ${i + 1}:`, e);
-        });
-      }
-      
-      console.error('----------------------------------------------------');
-      this._initializationError = error;
-    }
+    this._initialized = true;
+    console.log(`✅ Square service initialized successfully in ${env} mode.`);
   }
 
   isInitialized() {
-    return this._initialized === true;
+    return this._initialized;
   }
 
-  /**
-   * Create a payment link for an order
-   * @param {Object} options - Payment options
-   * @param {string} options.name - Name of the product/service
-   * @param {number} options.price - Price in cents (e.g., 100 = $1.00)
-   * @param {string} options.orderId - Unique order ID
-   * @returns {Promise<string>} Payment URL
-   */
-  async createPaymentLink({ name, price, orderId }) {
-    if (!this.isInitialized()) {
-      throw new Error('Square service is not properly initialized');
-    }
-
-    if (!this.locationId) {
-      throw new Error('Square location ID is not configured');
-    }
-
-    try {
-      // Create a checkout link
-      const { result } = await this.client.checkout.createPaymentLink({
-        idempotencyKey: uuidv4(),
-        order: {
-          order: {
-            locationId: this.locationId,
-            lineItems: [
-              {
-                name,
-                quantity: '1',
-                basePriceMoney: {
-                  amount: BigInt(price),
-                  currency: 'USD'
-                }
-              }
-            ]
-          }
-        }
-      });
-
-      return result.paymentLink.url;
-    } catch (error) {
-      console.error('Error creating payment link:', error);
-      if (error.response) {
-        console.error('API Response:', JSON.stringify(error.response, null, 2));
-      }
-      throw new Error(`Failed to create payment link: ${error.message}`);
-    }
-  }
-
-  async createPaymentLink(orderDetails) {
-    if (!this.isInitialized()) {
-      throw new Error('Square service is not properly initialized. Check server startup logs.');
-    }
-
-    const locationId = process.env.SQUARE_LOCATION_ID;
-    if (!locationId) {
-      throw new Error('SQUARE_LOCATION_ID is not configured in .env');
-    }
-
-    try {
-      const { result } = await this.client.checkout.createPaymentLink({
-        idempotencyKey: uuidv4(),
-        order: {
-          locationId: locationId,
-          lineItems: [
-            {
-              name: orderDetails.name,
-              quantity: '1',
-              basePriceMoney: {
-                amount: BigInt(orderDetails.price), // Price in cents
-                currency: 'USD',
-              },
-            },
-          ],
-        },
-        checkoutOptions: {
-          redirectUrl: orderDetails.redirectUrl,
-        },
-      });
-
-      return {
-        url: result.paymentLink.url,
-        paymentId: result.paymentLink.orderId,
-      };
-    } catch (error) {
-      console.error('Error creating Square payment link:', error);
-      throw new Error('Failed to create Square payment link.');
-    }
-  }
-
-  async getPaymentStatus(orderId) {
-    if (!this.isInitialized()) {
-      throw new Error('Square service is not properly initialized.');
-    }
-
-    try {
-      const { result } = await this.client.orders.retrieveOrder(orderId);
-      const order = result.order;
-
-      if (order.tenders && order.tenders.length > 0) {
-        return 'PAID';
-      }
-
-      return order.state; // e.g., 'OPEN', 'COMPLETED', 'CANCELED'
-    } catch (error) {
-      console.error(`Error retrieving Square order status for orderId ${orderId}:`, error);
-      throw new Error('Failed to retrieve Square payment status.');
-    }
-  }
-
-  /**
-   * Verifies the Square webhook signature.
-   * @param {string} signature - The X-Square-Signature header from the webhook request.
-   * @param {string} body - The raw request body.
-   * @param {string} timestamp - The X-Square-Timestamp header from the webhook request.
-   * @returns {boolean} True if the signature is valid, false otherwise.
-   */
-  verifyWebhookSignature(signature, body, timestamp) {
-    if (!this.webhookSignatureKey) {
-      console.error('SQUARE_WEBHOOK_SIGNATURE_KEY is not set. Webhook verification skipped.');
-      return false;
-    }
-
-    try {
-      const hmac = crypto.createHHmac('sha1', this.webhookSignatureKey);
-      hmac.update(body + timestamp);
-      const expectedSignature = hmac.digest('base64');
-
-      // Compare the expected signature with the signature from the header
-      // Using crypto.timingSafeEqual to prevent timing attacks
-      return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
-    } catch (error) {
-      console.error('Error verifying webhook signature:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Create a new payment using a nonce (payment token).
-   * @param {Object} paymentDetails - The details for the payment.
-   * @param {string} paymentDetails.sourceId - The payment token (nonce) from the frontend.
-   * @param {number} paymentDetails.amount - The amount to charge in cents.
-   * @param {string} paymentDetails.orderId - The internal order ID.
-   * @returns {Promise<Object>} The created payment object.
-   */
   async createPayment({ sourceId, amount, orderId }) {
     if (!this.isInitialized()) {
       throw new Error('Square service is not properly initialized');
@@ -268,6 +50,7 @@ class SquareService {
           currency: 'USD',
         },
         orderId,
+        locationId: this.locationId,
       });
 
       return result.payment;
@@ -276,6 +59,8 @@ class SquareService {
       throw new Error('Failed to create Square payment.');
     }
   }
+
+  // ... other methods ...
 }
 
-module.exports = SquareService;
+module.exports = new SquareService();

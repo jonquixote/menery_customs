@@ -1,6 +1,6 @@
 const { User, Order } = require('../models');
 const EmailService = require('../services/emailService');
-const SquarePaymentService = require('../services/squareService');
+const squareService = require('../services/squareService');
 const PaypalService = require('../services/paypalService');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
@@ -20,7 +20,7 @@ class PaymentController {
         const paymentStatus = await PaypalService.getPaymentStatus(paymentId);
         status = paymentStatus.status;
       } else if (paymentMethod.toLowerCase() === 'square') {
-        status = await SquarePaymentService.getPaymentStatus(paymentId);
+        status = await squareService.getPaymentStatus(paymentId);
       } else {
         return res.status(400).json({ error: 'Unsupported payment method' });
       }
@@ -251,9 +251,21 @@ class PaymentController {
         return res.status(400).json({ error: 'sourceId, orderId, and amount are required' });
       }
 
+      // Check SquareService initialization before proceeding
+      if (!squareService.isInitialized()) {
+        let reason = 'Unknown';
+        if (squareService._initializationError) {
+          reason = squareService._initializationError.message || String(squareService._initializationError);
+        }
+        return res.status(500).json({
+          error: 'Square service is not properly initialized',
+          reason
+        });
+      }
+
       const amountInCents = Math.round(parseFloat(amount) * 100);
 
-      const payment = await SquarePaymentService.createPayment({
+      const payment = await squareService.createPayment({
         sourceId,
         amount: amountInCents,
         orderId,
@@ -273,6 +285,17 @@ class PaymentController {
       res.json({ success: true, payment });
     } catch (error) {
       console.error('Error processing Square payment:', error);
+      // If the error is from SquareService initialization, surface the message
+      if (error.message && error.message.includes('Square service is not properly initialized')) {
+        let reason = 'Unknown';
+        if (squareService._initializationError) {
+          reason = squareService._initializationError.message || String(squareService._initializationError);
+        }
+        return res.status(500).json({
+          error: error.message,
+          reason
+        });
+      }
       res.status(500).json({ error: 'Failed to process Square payment' });
     }
   }

@@ -60,8 +60,8 @@ app.use(cors({
       // Only allow production frontend
       callback(null, 'https://menery-customs.vercel.app');
     } else {
-      // Only allow local frontend
-      if (!origin || origin.startsWith('http://localhost:3000')) {
+      // Allow all localhost origins in dev (any port)
+      if (!origin || origin.startsWith('http://localhost')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

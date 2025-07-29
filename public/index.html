@@ -19,6 +19,20 @@
       window.SQUARE_LOCATION_ID = 'L1TFJB8RR';
     </script>
     <style>
+        /* Force gold Pay Now button in Square modal */
+        #squarePaymentModalOverlay #card-button {
+            background: #FFD700 !important;
+            color: #000 !important;
+            border: 2px solid #FFD700 !important;
+            font-weight: 800;
+            box-shadow: 0 4px 24px 0 rgba(255,215,0,0.15);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        #squarePaymentModalOverlay #card-button:hover {
+            background: #FFEA70 !important;
+            color: #000 !important;
+        }
         :root {
             --primary-gold: #FFD700;
             --secondary-gold: #FFAA00;
@@ -361,20 +375,24 @@
           <span class="inline-flex items-center gap-2 text-green-400 text-sm mb-2"><i class="fas fa-lock"></i> SSL Encrypted</span>
         </div>
         <h2 class="text-3xl font-extrabold mb-2 text-primary-gold">Pay with Card or Digital Wallet</h2>
-        <p class="text-text-secondary mb-6">We accept all major cards, Apple Pay, and Google Pay. Your payment is safe and encrypted.</p>
+        <p class="mb-6" style="color:var(--primary-gold);font-weight:600;">We accept all major cards, Apple Pay, and Google Pay. Your payment is safe and encrypted.</p>
         <div id="square-loading-spinner" class="flex flex-col items-center justify-center py-8">
          <div class="loader mb-2 hidden"></div>
-          <span class="text-text-secondary text-sm">Loading secure payment options...</span>
+          <span class="text-primary-gold text-sm font-semibold">Loading secure payment options...</span>
         </div>
         <form id="square-payment-form" class="space-y-4 hidden">
           <div id="wallet-buttons" class="flex flex-col gap-3 mb-2"></div>
           <div id="card-container" class="mb-2"></div>
-          <button id="card-button" type="button" class="payment-btn w-full bg-green-600 h-14 flex items-center justify-center text-lg mt-2">Pay Now</button>
+          <button id="card-button" type="button" class="payment-btn w-full h-14 flex items-center justify-center text-lg mt-2 bg-primary-gold text-black font-extrabold shadow-lg border-2 border-primary-gold hover:bg-yellow-400 hover:shadow-2xl transition-all duration-200" style="letter-spacing:0.04em;box-shadow:0 4px 24px 0 rgba(255,215,0,0.15);">Pay Now</button>
         </form>
         <div id="squarePaymentError" class="error-message hidden"></div>
         <div class="mt-6 flex flex-col items-center gap-2">
-          <img src="https://sandbox.web.squarecdn.com/v1/logo-square.svg" alt="Square Logo" class="h-6 mb-1">
-          <span class="text-xs text-text-secondary">Payments processed securely by Square</span>
+          <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/square.svg" alt="Square Logo" class="h-6 mb-1" style="background:white;border-radius:4px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,0.07);max-width:32px;max-height:24px;width:auto;height:24px;">
+          <span class="text-xs" style="color:var(--primary-gold);">Payments processed securely by Square</span>
+        </div>
+        <!-- Apple Pay troubleshooting note for mobile users -->
+        <div id="apple-pay-troubleshoot" class="text-xs text-yellow-400 mt-2 hidden">
+          <i class="fas fa-info-circle mr-1"></i> Apple Pay not showing? Make sure you're using Safari on a real iPhone with Apple Pay set up.
         </div>
       </div>
     </div>
@@ -563,7 +581,7 @@
                                 <p style="font-size: 18px; line-height: 20px; color: #000000;">30 Second Voiceover</p>
                                 <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000000;">$200.00</p>
                                 <a id="square-payment-link-200" href="#" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px;">Buy now</a>
-                                <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button>
+                                <!-- <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button> -->
                             </div>
                             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
                         </div>`;
@@ -574,7 +592,7 @@
                                 <p style="font-size: 18px; line-height: 20px; color: #000000;">1 minute Voiceover</p>
                                 <p style="font-size: 18px; line-height: 20px; font-weight: 600; color: #000000;">$250.00</p>
                                 <a id="square-payment-link-250" href="#" style="display: inline-block; font-size: 18px; line-height: 48px; height: 48px; color: #ffffff; min-width: 212px; background-color: #006aff; text-align: center; box-shadow: 0 0 0 1px rgba(0,0,0,.1) inset; border-radius: 6px;">Buy now</a>
-                                <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button>
+                                <!-- <button id="test-payment-btn" type="button" style="margin-top: 16px; width: 100%; height: 48px; background: #FFD700; color: #000; border: none; border-radius: 6px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Test (Admin Only)</button> -->
                             </div>
                             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik">
                         </div>`;
@@ -623,6 +641,21 @@
             // --- Square Web Payments SDK Integration ---
             let squarePayments, card, applePay, googlePay;
             async function setupSquareCardForm() {
+                // Show Apple Pay troubleshooting note if on iPhone and Apple Pay not detected
+                const isIphone = /iPhone/.test(navigator.userAgent) && !window.MSStream;
+                if (isIphone) {
+                  setTimeout(() => {
+                    const applePayBtn = document.querySelector('#wallet-buttons button');
+                    const troubleshoot = document.getElementById('apple-pay-troubleshoot');
+                    if (troubleshoot) {
+                      if (!applePayBtn || !/Apple Pay/i.test(applePayBtn.textContent)) {
+                        troubleshoot.classList.remove('hidden');
+                      } else {
+                        troubleshoot.classList.add('hidden');
+                      }
+                    }
+                  }, 800);
+                }
                 const cardContainer = document.getElementById('card-container');
                 const cardButton = document.getElementById('card-button');
                 const errorDiv = document.getElementById('squarePaymentError');
@@ -774,7 +807,8 @@
                     // Create order and get orderId
                     let orderId;
                     try {
-                        const orderRes = await fetch('/api/orders', { method: 'POST', body: formData });
+                        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+                        const orderRes = await fetch(apiBase + '/api/orders', { method: 'POST', body: formData });
                         const orderJson = await orderRes.json();
                         if (!orderRes.ok || !orderJson.orderId) {
                             throw new Error(orderJson.error || 'Failed to create order.');
@@ -785,7 +819,8 @@
                     }
 
                     // Call backend to process Square payment
-                    const paymentRes = await fetch('/api/payments/process-square-payment', {
+                    const paymentApiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+                    const paymentRes = await fetch(paymentApiBase + '/api/payments/process-square-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -839,7 +874,8 @@
                 formData.append('video', uploadedFile);
                 formData.append('status', 'clicked');
 
-                fetch('/api/orders', {
+                const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+                fetch(apiBase + '/api/orders', {
                     method: 'POST',
                     body: formData
                 }).then(res => {

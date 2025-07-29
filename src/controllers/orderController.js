@@ -121,17 +121,28 @@ class OrderController {
         }
       }
 
+      // Determine order status and paymentIntentId based on payment method
+      let orderStatus = req.body.status || 'pending';
+      let paymentIntentId = '';
+      if (paymentMethod.toLowerCase() === 'square') {
+        orderStatus = 'unfulfilled';
+        paymentIntentId = req.body.paymentIntentId || `square_${Date.now()}`;
+      } else {
+        orderStatus = req.body.status || 'pending';
+        paymentIntentId = `paypal_${Date.now()}`;
+      }
+
       // Create order in database
       const order = await Order.create({
         customerName: name,
         customerEmail: customerEmail,
         customerPhone: phone,
-        status: req.body.status || 'pending',
+        status: orderStatus,
         price: parseFloat(amount) || 0,
         duration: parseInt(duration) || 0,
         paymentStatus: 'pending',
         paymentMethod: paymentMethod,
-        paymentIntentId: `paypal_${Date.now()}`,
+        paymentIntentId: paymentIntentId,
         originalVideoKey: s3Key,
         finalVideoKey: '',
         notes: notes,
@@ -144,24 +155,32 @@ class OrderController {
         throw new Error('Customer email is required');
       }
 
+
       // Emails will be sent after successful payment capture.
 
-      // Now, create the PayPal order immediately
-      const paypalOrder = await PaypalService.createOrder({
-        orderId: order.id,
-        amount: order.price,
-        description: `Voiceover Order #${order.id}`
-      });
-
-      // Update our order with the PayPal order ID
-      await order.update({ paymentIntentId: paypalOrder.id });
-
-      res.status(201).json({
-        success: true,
-        orderId: order.id,
-        paypalOrderId: paypalOrder.id, // Send the PayPal ID to the client
-        message: 'Order created successfully'
-      });
+      // Only create PayPal order if payment method is PayPal
+      if (paymentMethod.toLowerCase() === 'paypal') {
+        const paypalOrder = await PaypalService.createOrder({
+          orderId: order.id,
+          amount: order.price,
+          description: `Voiceover Order #${order.id}`
+        });
+        // Update our order with the PayPal order ID
+        await order.update({ paymentIntentId: paypalOrder.id });
+        res.status(201).json({
+          success: true,
+          orderId: order.id,
+          paypalOrderId: paypalOrder.id, // Send the PayPal ID to the client
+          message: 'Order created successfully'
+        });
+      } else {
+        // For Square and other methods, just return the order info
+        res.status(201).json({
+          success: true,
+          orderId: order.id,
+          message: 'Order created successfully'
+        });
+      }
 
     } catch (error) {
       console.error('Error in createOrder:', error);

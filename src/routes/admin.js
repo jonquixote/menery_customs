@@ -10,6 +10,9 @@ router.post('/generate-token', AdminController.generateToken);
 // POST /api/admin/orders - Create order from admin dashboard
 router.post('/orders', AdminController.createOrder);
 
+// PUT /api/admin/orders/:id - Edit order from admin dashboard
+router.put('/orders/:id', AdminController.updateOrderFromAdmin);
+
 // DELETE /api/admin/orders/:id
 router.delete('/orders/:id', AdminController.deleteOrder);
 

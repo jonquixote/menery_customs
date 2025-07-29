@@ -8,6 +8,43 @@ const bcrypt = require('bcrypt');
 
 
 class AdminController {
+  static async updateOrderFromAdmin(req, res) {
+    try {
+      const { id } = req.params;
+      const { customerName, status, price, originalVideoKey } = req.body;
+      const order = await Order.findByPk(id);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      // Preserve video if not changed
+      const videoKeyToUse = originalVideoKey || order.originalVideoKey;
+      await order.update({
+        customerName: customerName || order.customerName,
+        status: status || order.status,
+        price: price !== undefined ? Number(price) : order.price,
+        originalVideoKey: videoKeyToUse
+      });
+      // Generate video URL if key exists
+      let videoUrl = null;
+      if (order.originalVideoKey) {
+        try {
+          videoUrl = await S3Service.generateDownloadUrl(order.originalVideoKey);
+        } catch (err) {
+          console.error('Error generating video URL:', err);
+        }
+      }
+      res.json({
+        message: 'Order updated successfully',
+        order: {
+          ...order.toJSON(),
+          videoUrl
+        }
+      });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      res.status(500).json({ error: 'Failed to update order', details: error.message });
+    }
+  }
   static async createOrder(req, res) {
     try {
       const { customerName, status, price, originalVideoKey } = req.body;

@@ -374,6 +374,9 @@
 
         function openOrderModal(mode, data = {}) {
             orderModal.classList.remove('hidden');
+            const videoUploadStatus = document.getElementById('order-video-upload-status');
+            const videoProgressContainer = document.getElementById('order-video-progress-container');
+            const videoProgressBar = document.getElementById('order-video-progress-bar');
             if (mode === 'edit') {
                 orderModalTitle.textContent = 'Edit Order';
                 document.getElementById('order-id').value = data.id || '';
@@ -381,6 +384,15 @@
                 document.getElementById('order-status').value = data.status || 'pending';
                 document.getElementById('order-amount').value = data.amount || 0;
                 document.getElementById('order-video').value = data.video || '';
+                // Show video link if available
+                videoUploadStatus.textContent = '';
+                videoProgressContainer.classList.add('hidden');
+                videoProgressBar.style.width = '0%';
+                if (data.video && data.videoUrl) {
+                  videoUploadStatus.innerHTML = `<a href="${data.videoUrl}" target="_blank" class="text-indigo-600 underline ml-2">View Current Video</a>`;
+                } else {
+                  videoUploadStatus.textContent = 'No video uploaded.';
+                }
             } else {
                 orderModalTitle.textContent = 'Create Order';
                 document.getElementById('order-id').value = '';
@@ -388,6 +400,9 @@
                 document.getElementById('order-status').value = 'pending';
                 document.getElementById('order-amount').value = '';
                 document.getElementById('order-video').value = '';
+                videoUploadStatus.textContent = '';
+                videoProgressContainer.classList.add('hidden');
+                videoProgressBar.style.width = '0%';
             }
         }
         function closeOrderModal() {

@@ -242,43 +242,6 @@
                 ui.startBtn.disabled = false;
             }
         };
-                ui.rawCameraPreview.srcObject = state.userMediaStream;
-                ui.webcamVideo.srcObject = state.userMediaStream;
-                await Promise.all([ui.rawCameraPreview.play(), ui.webcamVideo.play()]);
-                // Always show raw camera preview after permissions
-                ui.rawCameraPreviewContainer.classList.remove('hidden');
-                ui.greenscreenPreviewContainer.classList.add('hidden');
-                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                ui.startSection.classList.add('hidden');
-                ui.appContent.classList.remove('hidden');
-                hideStatus();
-                const arrayBuffer = await file.arrayBuffer();
-                state.videoAudioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
-            } catch (e) {
-                console.error("Error decoding audio data:", e);
-                showStatus("Could not process the audio from this video file. It might be corrupted or in an unsupported format.", true, true);
-                return;
-            }
-
-            ui.videoPlayer.onloadedmetadata = () => {
-                const w = ui.videoPlayer.videoWidth;
-                const h = ui.videoPlayer.videoHeight;
-                ui.mainCanvas.width = w;
-                ui.mainCanvas.height = h;
-                ui.fullscreenCanvas.width = w;
-                ui.fullscreenCanvas.height = h;
-                state.maskCanvas.width = w;
-                state.maskCanvas.height = h;
-                
-                ui.videoPlayer.onseeked = () => renderFrame();
-                ui.videoPlayer.currentTime = 0.01;
-
-                ui.uploadSection.classList.add('hidden');
-                ui.editorSection.classList.remove('hidden');
-                hideStatus();
-            };
-        };
         
         const onMediaPipeResults = (results) => {
             state.latestSegmentationMask = results.segmentationMask;

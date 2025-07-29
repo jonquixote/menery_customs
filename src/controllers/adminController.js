@@ -7,6 +7,21 @@ const bcrypt = require('bcrypt');
 
 class AdminController {
 
+  static async deleteOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const order = await Order.findByPk(id);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      await order.destroy();
+      res.json({ message: 'Order deleted successfully', orderId: id });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      res.status(500).json({ error: 'Failed to delete order' });
+    }
+  }
+
   static async generateToken(req, res) {
     const { email, password } = req.body;
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';

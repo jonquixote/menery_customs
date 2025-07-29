@@ -314,6 +314,7 @@
                 sendWebcamFrameToMediaPipe();
             } catch (error) {
                 console.error('--- DETAILED AI MODEL LOADING ERROR ---', error);
+                showStatus('AI model failed to load. Check console for details. Missing or corrupt asset?', true, true);
                 ui.modeGreenscreenBtn.disabled = true;
                 ui.modeGreenscreenBtn.classList.remove('bg-gray-600');
                 ui.modeGreenscreenBtn.classList.add('bg-red-900', 'cursor-not-allowed');
@@ -323,7 +324,11 @@
         
         const sendWebcamFrameToMediaPipe = async () => {
             // Only run if model is loaded, webcam is ready, and app is active
-            if (!state.modelLoaded || !state.mediaPipeModel) return;
+            if (!state.modelLoaded || !state.mediaPipeModel) {
+                console.warn('MediaPipe model not loaded, frame loop not running.');
+                showStatus('Green screen AI is not running. Model not loaded.', true, true);
+                return;
+            }
             if (!state.userMediaStream || !ui.webcamVideo || ui.webcamVideo.readyState < 2) {
                 // Wait for webcam to be ready
                 requestAnimationFrame(sendWebcamFrameToMediaPipe);
@@ -332,13 +337,16 @@
             // If app is not previewing or recording, don't send frames
             if (!state.isPreviewing && !state.isRecording) {
                 // Only run if greenscreen mode is active
-                if (state.activeMode !== 'greenscreen') return;
+                if (state.activeMode !== 'greenscreen') {
+                    console.warn('Not in greenscreen mode, frame loop not running.');
+                    return;
+                }
             }
             try {
                 await state.mediaPipeModel.send({image: ui.webcamVideo});
             } catch (err) {
                 console.error('MediaPipe send error:', err);
-                // Optionally, show error to user or stop loop
+                showStatus('Error sending webcam frame to AI model. See console.', true, true);
                 return;
             }
             requestAnimationFrame(sendWebcamFrameToMediaPipe);

@@ -242,15 +242,17 @@
                 ui.startBtn.disabled = false;
             }
         };
-
-        const handleVideoUpload = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            showStatus('Processing audio...');
-            const fileURL = URL.createObjectURL(file);
-            ui.videoPlayer.src = fileURL;
-            
-            try {
+                ui.rawCameraPreview.srcObject = state.userMediaStream;
+                ui.webcamVideo.srcObject = state.userMediaStream;
+                await Promise.all([ui.rawCameraPreview.play(), ui.webcamVideo.play()]);
+                // Always show raw camera preview after permissions
+                ui.rawCameraPreviewContainer.classList.remove('hidden');
+                ui.greenscreenPreviewContainer.classList.add('hidden');
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                ui.startSection.classList.add('hidden');
+                ui.appContent.classList.remove('hidden');
+                hideStatus();
                 const arrayBuffer = await file.arrayBuffer();
                 state.videoAudioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
             } catch (e) {

@@ -258,18 +258,19 @@
                 const id = document.getElementById('order-id').value;
                 const customerName = document.getElementById('order-customer').value;
                 const status = document.getElementById('order-status').value;
-                const amount = document.getElementById('order-amount').value;
-                const videoKey = document.getElementById('order-video').value;
+                const price = parseFloat(document.getElementById('order-amount').value) || 0;
+                const originalVideoKey = document.getElementById('order-video').value;
+                // Match buy order test payload structure
                 const payload = {
                     customerName,
                     status,
-                    price: amount,
-                    originalVideoKey: videoKey
+                    price,
+                    originalVideoKey
                 };
                 try {
                     let res;
                     if (id) {
-                        // Update
+                        // Update order
                         res = await fetch(`${apiBase}/api/admin/orders/${id}`, {
                             method: 'PUT',
                             headers: {
@@ -279,7 +280,7 @@
                             body: JSON.stringify(payload)
                         });
                     } else {
-                        // Create
+                        // Create order
                         res = await fetch(`${apiBase}/api/admin/orders`, {
                             method: 'POST',
                             headers: {
@@ -293,9 +294,12 @@
                         closeOrderModal();
                         fetchOrders(localStorage.getItem('adminToken'));
                     } else {
-                        alert('Failed to save order.');
+                        const errorText = await res.text();
+                        console.error('Order save error:', errorText);
+                        alert('Failed to save order. ' + errorText);
                     }
                 } catch (err) {
+                    console.error('Order save exception:', err);
                     alert('Error saving order.');
                 }
             });
@@ -368,9 +372,12 @@
                 if (res.ok) {
                     fetchOrders(localStorage.getItem('adminToken'));
                 } else {
-                    alert('Failed to delete order.');
+                    const errorText = await res.text();
+                    console.error('Order delete error:', errorText);
+                    alert('Failed to delete order. ' + errorText);
                 }
             } catch (err) {
+                console.error('Order delete exception:', err);
                 alert('Error deleting order.');
             }
         }

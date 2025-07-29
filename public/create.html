@@ -19,6 +19,8 @@
       worker-src 'self';">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Video Dubbing & Green Screen Studio</title>
+    <script src="/libs/selfie_segmentation.js" defer></script>
+    <script src="/libs/RecordRTC.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -299,7 +301,8 @@
         const loadMediaPipeModelInBackground = async () => {
             try {
                 if (!window.SelfieSegmentation) throw new Error('MediaPipe SelfieSegmentation library not loaded.');
-                const selfieSegmentation = new SelfieSegmentation({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}` });
+                // Use local assets for MediaPipe
+                const selfieSegmentation = new SelfieSegmentation({ locateFile: (file) => `/libs/mediapipe_selfie_segmentation/${file}` });
                 selfieSegmentation.setOptions({ modelSelection: 1 });
                 selfieSegmentation.onResults(onMediaPipeResults);
                 state.mediaPipeModel = selfieSegmentation;

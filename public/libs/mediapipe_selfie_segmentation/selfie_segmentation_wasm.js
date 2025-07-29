@@ -1,0 +1,1 @@
+Couldn't find the requested file /selfie_segmentation_wasm.js in @mediapipe/selfie_segmentation.

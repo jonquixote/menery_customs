@@ -398,38 +398,37 @@
                 videoUploadStatus.textContent = '';
                 videoProgressContainer.classList.add('hidden');
                 videoProgressBar.style.width = '0%';
-                // Show loading spinner while fetching video URL
-                videoCurrentContainer.classList.add('hidden');
-                videoUploadContainer.style.display = 'none';
-                if (data.video) {
+                // Show current video if available
+                if (data.video && data.videoUrl) {
                   videoCurrentContainer.classList.remove('hidden');
-                  videoCurrentLink.textContent = 'Loading...';
-                  videoCurrentLink.href = '#';
-                  // Show spinner
-                  videoCurrentLink.innerHTML = '<span class="fa fa-spinner fa-spin text-indigo-600"></span> Loading...';
-                  // Fetch video URL from backend if not present
-                  fetch(`${apiBase}/api/admin/orders/${data.id}`)
-                    .then(res => res.json())
-                    .then(orderData => {
-                      if (orderData.order && orderData.order.videoUrl) {
-                        videoCurrentLink.href = orderData.order.videoUrl;
-                        videoCurrentLink.innerHTML = 'View Current Video';
-                      } else {
-                        videoCurrentLink.innerHTML = 'No video available.';
-                        videoCurrentLink.href = '#';
-                      }
-                    })
-                    .catch(() => {
-                      videoCurrentLink.innerHTML = 'Error loading video.';
-                      videoCurrentLink.href = '#';
-                    });
+                  videoCurrentLink.href = data.videoUrl;
+                  videoCurrentLink.textContent = 'View Current Video';
+                  // Add inline video player
+                  if (!document.getElementById('order-video-player')) {
+                    const videoPlayer = document.createElement('video');
+                    videoPlayer.id = 'order-video-player';
+                    videoPlayer.src = data.videoUrl;
+                    videoPlayer.controls = true;
+                    videoPlayer.className = 'mt-2 w-full rounded shadow';
+                    videoCurrentContainer.appendChild(videoPlayer);
+                  } else {
+                    const videoPlayer = document.getElementById('order-video-player');
+                    videoPlayer.src = data.videoUrl;
+                  }
+                  videoUploadContainer.style.display = 'none';
                   videoReplaceBtn.onclick = function() {
                     videoUploadContainer.style.display = '';
                     videoCurrentContainer.classList.add('hidden');
+                    // Remove video player
+                    const vp = document.getElementById('order-video-player');
+                    if (vp) vp.remove();
                   };
                 } else {
                   videoCurrentContainer.classList.add('hidden');
                   videoUploadContainer.style.display = '';
+                  // Remove video player if present
+                  const vp = document.getElementById('order-video-player');
+                  if (vp) vp.remove();
                 }
             } else {
                 orderModalTitle.textContent = 'Create Order';

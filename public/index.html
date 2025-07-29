@@ -872,17 +872,22 @@
                     uploadModal.style.left = '0';
                     uploadModal.style.width = '100vw';
                     uploadModal.style.height = '100vh';
-                    uploadModal.style.background = 'rgba(0,0,0,0.85)';
+                    uploadModal.style.background = 'rgba(24, 24, 32, 0.92)';
                     uploadModal.style.display = 'flex';
                     uploadModal.style.flexDirection = 'column';
                     uploadModal.style.justifyContent = 'center';
                     uploadModal.style.alignItems = 'center';
                     uploadModal.style.zIndex = '99999';
                     uploadModal.innerHTML = `
-                        <div style="background: #fff; padding: 40px 56px; border-radius: 16px; box-shadow: 0 2px 24px rgba(0,0,0,0.25); display: flex; flex-direction: column; align-items: center; min-width: 320px;">
-                            <div class="loader" style="border: 10px solid #f3f3f3; border-top: 10px solid #006aff; border-radius: 50%; width: 70px; height: 70px; animation: spin 1s linear infinite; margin-bottom: 32px;"></div>
-                            <p style="font-size: 22px; color: #222; font-weight: 500; margin-bottom: 8px;">Uploading your video...</p>
-                            <p style="font-size: 16px; color: #555;">Please wait while we process your order.</p>
+                        <div style="background: #fff; padding: 48px 64px; border-radius: 18px; box-shadow: 0 4px 32px rgba(0,0,0,0.18); display: flex; flex-direction: column; align-items: center; min-width: 340px; border: 2px solid #FFD700;">
+                            <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 32px;">
+                                <div class="loader" style="border: 10px solid #f3f3f3; border-top: 10px solid #FFD700; border-radius: 50%; width: 70px; height: 70px; animation: spin 1s linear infinite;"></div>
+                                <span style="margin-left: 18px; font-size: 2.2rem; color: #FFD700;"><i class='fas fa-lock'></i></span>
+                            </div>
+                            <h2 style="font-size: 2rem; color: #222; font-weight: 700; margin-bottom: 10px; font-family: Rubik, SQ Market, Helvetica, Arial, sans-serif;">Processing Your Secure Order</h2>
+                            <p style="font-size: 1.15rem; color: #444; margin-bottom: 8px; text-align: center;">Uploading your video and preparing your payment...</p>
+                            <p style="font-size: 1rem; color: #006aff; font-weight: 500; margin-bottom: 18px; text-align: center;">You won’t be charged yet.</p>
+                            <div style="margin-top: 10px; font-size: 0.95rem; color: #888; text-align: center;">Your information is encrypted and handled securely.</div>
                             <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                         </div>
                     `;
@@ -929,18 +934,23 @@
                         videoKey: videoKey,
                         status: 'clicked'
                     };
+                    // Store orderId in localStorage for later status update
                     return fetch(apiBase + '/api/orders', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(orderData)
+                    }).then(async orderRes => {
+                        if (!orderRes.ok) throw new Error('Order creation failed');
+                        const orderJson = await orderRes.json();
+                        if (orderJson.orderId) {
+                            localStorage.setItem('lastOrderId', orderJson.orderId);
+                        }
+                        // Step 4: Redirect to Square
+                        uploadModal.style.display = 'none';
+                        window.location.href = squareLink;
                     });
                 })
-                .then(orderRes => {
-                    if (!orderRes.ok) throw new Error('Order creation failed');
-                    // Step 4: Redirect to Square
-                    uploadModal.style.display = 'none';
-                    window.location.href = squareLink;
-                })
+                // ...existing code...
                 .catch(err => {
                     uploadModal.style.display = 'none';
                     alert('Error: ' + (err.message || 'Order could not be saved before redirecting to payment.'));

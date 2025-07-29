@@ -1,3 +1,23 @@
+<script>
+// On thank-you page load, update order status to 'unfulfilled' if lastOrderId exists
+document.addEventListener('DOMContentLoaded', async function() {
+    const orderId = localStorage.getItem('lastOrderId');
+    if (orderId) {
+        try {
+            const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+            await fetch(apiBase + '/api/orders/' + orderId + '/status', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'unfulfilled' })
+            });
+            localStorage.removeItem('lastOrderId');
+        } catch (err) {
+            // Optionally show error or log
+            console.error('Failed to update order status:', err);
+        }
+    }
+});
+</script>
 <!DOCTYPE html>
 <html lang="en">
 <head>

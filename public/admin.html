@@ -41,9 +41,14 @@
             </button>
         </div>
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-list"></i> Recent Orders
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-list"></i> Recent Orders
+                </h2>
+                <button id="create-order-btn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Create Order
+                </button>
+            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -54,12 +59,49 @@
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Status</th>
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Amount</th>
                             <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200">
                         <!-- Orders will be dynamically inserted here -->
                     </tbody>
                 </table>
+            </div>
+            <!-- Create/Edit Modal -->
+            <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg">
+                    <h3 id="order-modal-title" class="text-xl font-bold mb-4">Create/Edit Order</h3>
+                    <form id="order-form" class="space-y-4">
+                        <input type="hidden" id="order-id">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Customer Name</label>
+                            <input id="order-customer" type="text" required class="w-full px-3 py-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Status</label>
+                            <select id="order-status" required class="w-full px-3 py-2 border rounded">
+                                <option value="pending">Pending</option>
+                                <option value="clicked">Clicked</option>
+                                <option value="unfulfilled">Unfulfilled</option>
+                                <option value="paid">Paid</option>
+                                <option value="processing">Processing</option>
+                                <option value="complete">Complete</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Amount</label>
+                            <input id="order-amount" type="number" min="0" required class="w-full px-3 py-2 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Video Key</label>
+                            <input id="order-video" type="text" class="w-full px-3 py-2 border rounded">
+                        </div>
+                        <div class="flex justify-end gap-2 mt-6">
+                            <button type="button" id="order-cancel-btn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+                            <button type="submit" id="order-save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -177,10 +219,126 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">$${order.price || '0.00'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}</td>
+                            <td class="px-6 py-4 whitespace-nowrap flex gap-2">
+                                <button class="edit-order-btn px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" data-id="${order.id}" data-customer="${order.customerName || ''}" data-status="${order.status}" data-amount="${order.price || 0}" data-video="${order.originalVideoKey || ''}"><i class="fa-solid fa-pen"></i></button>
+                                <button class="delete-order-btn px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600" data-id="${order.id}"><i class="fa-solid fa-trash"></i></button>
+                            </td>
                         </tr>
                     `;
                     ordersTableBody.innerHTML += row;
                 });
+                // Attach event listeners for edit/delete
+                document.querySelectorAll('.edit-order-btn').forEach(btn => {
+                    btn.addEventListener('click', () => openOrderModal('edit', btn.dataset));
+                });
+                document.querySelectorAll('.delete-order-btn').forEach(btn => {
+                    btn.addEventListener('click', () => deleteOrder(btn.dataset.id));
+                });
+            }
+        // CRUD Modal logic
+        const orderModal = document.getElementById('order-modal');
+        const orderForm = document.getElementById('order-form');
+        const orderCancelBtn = document.getElementById('order-cancel-btn');
+        const orderSaveBtn = document.getElementById('order-save-btn');
+        const createOrderBtn = document.getElementById('create-order-btn');
+        const orderModalTitle = document.getElementById('order-modal-title');
+
+        if (createOrderBtn) {
+            createOrderBtn.addEventListener('click', () => openOrderModal('create'));
+        }
+        if (orderCancelBtn) {
+            orderCancelBtn.addEventListener('click', closeOrderModal);
+        }
+        if (orderForm) {
+            orderForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const id = document.getElementById('order-id').value;
+                const customerName = document.getElementById('order-customer').value;
+                const status = document.getElementById('order-status').value;
+                const amount = document.getElementById('order-amount').value;
+                const videoKey = document.getElementById('order-video').value;
+                const payload = {
+                    customerName,
+                    status,
+                    price: amount,
+                    originalVideoKey: videoKey
+                };
+                try {
+                    let res;
+                    if (id) {
+                        // Update
+                        res = await fetch(`${apiBase}/api/admin/orders/${id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        // Create
+                        res = await fetch(`${apiBase}/api/admin/orders`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    if (res.ok) {
+                        closeOrderModal();
+                        fetchOrders(localStorage.getItem('adminToken'));
+                    } else {
+                        alert('Failed to save order.');
+                    }
+                } catch (err) {
+                    alert('Error saving order.');
+                }
+            });
+        }
+
+        function openOrderModal(mode, data = {}) {
+            orderModal.classList.remove('hidden');
+            if (mode === 'edit') {
+                orderModalTitle.textContent = 'Edit Order';
+                document.getElementById('order-id').value = data.id || '';
+                document.getElementById('order-customer').value = data.customer || '';
+                document.getElementById('order-status').value = data.status || 'pending';
+                document.getElementById('order-amount').value = data.amount || 0;
+                document.getElementById('order-video').value = data.video || '';
+            } else {
+                orderModalTitle.textContent = 'Create Order';
+                document.getElementById('order-id').value = '';
+                document.getElementById('order-customer').value = '';
+                document.getElementById('order-status').value = 'pending';
+                document.getElementById('order-amount').value = '';
+                document.getElementById('order-video').value = '';
+            }
+        }
+        function closeOrderModal() {
+            orderModal.classList.add('hidden');
+            orderForm.reset();
+        }
+        async function deleteOrder(id) {
+            if (!confirm('Are you sure you want to delete this order?')) return;
+            try {
+                const res = await fetch(`${apiBase}/api/admin/orders/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (res.ok) {
+                    fetchOrders(localStorage.getItem('adminToken'));
+                } else {
+                    alert('Failed to delete order.');
+                }
+            } catch (err) {
+                alert('Error deleting order.');
+            }
+        }
             }
 
             function getStatusColor(status) {

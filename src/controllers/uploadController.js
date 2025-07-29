@@ -21,9 +21,11 @@ class UploadController {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // Validate file type
-      const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/x-matroska'];
-      if (!validTypes.includes(fileType)) {
+      // Validate file type (accept both MIME type and file extension)
+      const validMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv', 'video/x-matroska'];
+      const validExtensions = ['.mp4', '.mov', '.avi', '.wmv', '.mkv'];
+      const fileExtension = fileName ? fileName.toLowerCase().slice(fileName.lastIndexOf('.')) : '';
+      if (!validMimeTypes.includes(fileType) && !validExtensions.includes(fileExt)) {
         return res.status(400).json({ 
           error: 'Invalid file type. Supported types: MP4, MOV, AVI, WMV, MKV' 
         });
@@ -38,8 +40,7 @@ class UploadController {
       }
 
       // Generate a unique key for the file
-      const fileExt = fileName.split('.').pop();
-      const key = `uploads/${uuidv4()}.${fileExt}`;
+      const key = `uploads/${uuidv4()}.${fileExtension}`;
       
       // Generate presigned URL for upload
       const command = new PutObjectCommand({

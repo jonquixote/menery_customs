@@ -20,10 +20,10 @@ class AdminController {
         status,
         price: Number(price),
         originalVideoKey,
-        duration: 0,
+        duration: 1,
         paymentMethod: 'admin',
         paymentIntentId: 'admin-' + Date.now(),
-        customerEmail: 'admin@menerycustoms.com',
+        customerEmail: 'menerycustoms@gmail.com',
         userId: 1
       });
       // Generate video URL if key exists

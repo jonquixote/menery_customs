@@ -95,7 +95,10 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Video Upload</label>
                             <input id="order-video-file" type="file" accept="video/*" class="w-full px-3 py-2 border rounded">
-                            <div id="order-video-upload-status" class="text-xs text-gray-500 mt-1"></div>
+                            <div id="order-video-upload-status" class="text-xs text-gray-500 mt-1 flex items-center gap-2"></div>
+                            <div id="order-video-progress-container" class="w-full h-2 bg-gray-200 rounded mt-1 hidden">
+                              <div id="order-video-progress-bar" class="h-2 bg-indigo-500 rounded" style="width:0%"></div>
+                            </div>
                             <input id="order-video" type="hidden">
                         </div>
                         <div class="flex justify-end gap-2 mt-6">
@@ -305,13 +308,19 @@
                     alert('Error saving order.');
                 }
             });
-            // S3 upload logic for video
+            // S3 upload logic for video with progress bar and save button disabling
             const videoFileInput = document.getElementById('order-video-file');
             const videoUploadStatus = document.getElementById('order-video-upload-status');
+            const videoProgressContainer = document.getElementById('order-video-progress-container');
+            const videoProgressBar = document.getElementById('order-video-progress-bar');
+            const orderSaveBtn = document.getElementById('order-save-btn');
             videoFileInput.addEventListener('change', async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
+                orderSaveBtn.disabled = true;
                 videoUploadStatus.textContent = 'Uploading...';
+                videoProgressContainer.classList.remove('hidden');
+                videoProgressBar.style.width = '0%';
                 try {
                     // Step 1: Get S3 upload URL from backend
                     const res = await fetch(`${apiBase}/api/upload/initiate`, {
@@ -324,21 +333,41 @@
                     });
                     if (!res.ok) throw new Error('Failed to get upload URL');
                     const { uploadUrl, key, videoUrl } = await res.json();
-                    // Step 2: Upload to S3
-                    const uploadRes = await fetch(uploadUrl, {
-                        method: 'PUT',
-                        body: file
+                    // Step 2: Upload to S3 with progress
+                    await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('PUT', uploadUrl, true);
+                        xhr.upload.onprogress = function(e) {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                videoProgressBar.style.width = percent + '%';
+                            }
+                        };
+                        xhr.onload = function() {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                resolve();
+                            } else {
+                                reject(new Error('Failed to upload to S3'));
+                            }
+                        };
+                        xhr.onerror = function() {
+                            reject(new Error('Failed to upload to S3'));
+                        };
+                        xhr.send(file);
                     });
-                    if (!uploadRes.ok) throw new Error('Failed to upload to S3');
                     // Step 3: Set video key and video URL for order
                     document.getElementById('order-video').value = key;
                     videoUploadStatus.textContent = 'Upload successful!';
+                    videoProgressBar.style.width = '100%';
+                    orderSaveBtn.disabled = false;
                     // Optionally show link to video
                     if (videoUrl) {
                         videoUploadStatus.innerHTML += ` <a href="${videoUrl}" target="_blank" class="text-indigo-600 underline ml-2">View</a>`;
                     }
                 } catch (err) {
                     videoUploadStatus.textContent = 'Upload failed.';
+                    videoProgressContainer.classList.add('hidden');
+                    orderSaveBtn.disabled = false;
                 }
             });
         }

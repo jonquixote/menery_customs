@@ -14,12 +14,17 @@ class AdminController {
       if (!customerName || !status || price === undefined || isNaN(Number(price)) || !originalVideoKey) {
         return res.status(400).json({ error: 'Missing required fields. Video must be uploaded first.' });
       }
-      // Create order with video key (matches buy order test flow)
+      // Create order with required fields to match model constraints
       const order = await Order.create({
         customerName,
         status,
         price: Number(price),
-        originalVideoKey
+        originalVideoKey,
+        duration: 0,
+        paymentMethod: 'admin',
+        paymentIntentId: 'admin-' + Date.now(),
+        customerEmail: 'admin@menerycustoms.com',
+        userId: 1
       });
       // Generate video URL if key exists
       let videoUrl = null;

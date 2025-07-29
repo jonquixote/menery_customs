@@ -146,7 +146,9 @@
                         localStorage.setItem('adminEmail', email);
                         showDashboard(token);
                     } else {
-                        alert('Login failed. Please check your credentials.');
+                        const errorText = await response.text();
+                        console.error('Login failed:', errorText);
+                        alert('Login failed. Please check your credentials. ' + errorText);
                     }
                 } catch (error) {
                     console.error('Login error:', error);

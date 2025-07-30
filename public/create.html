@@ -532,38 +532,56 @@
             ctx.drawImage(ui.videoPlayer, 0, 0, canvas.width, canvas.height);
 
             if (state.activeMode === 'greenscreen' && state.modelLoaded && state.latestSegmentationMask) {
+                // --- Improved Masking ---
                 state.maskCtx.clearRect(0, 0, state.maskCanvas.width, state.maskCanvas.height);
-                
-                state.maskCtx.filter = 'blur(5px)';
+                // Stronger blur for smoother edges
+                state.maskCtx.filter = 'blur(12px)';
                 state.maskCtx.drawImage(state.latestSegmentationMask, 0, 0, state.maskCanvas.width, state.maskCanvas.height);
                 state.maskCtx.filter = 'none';
 
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
-                
-                const webcam = ui.webcamVideo;
-                const canvasRatio = canvas.width / canvas.height;
-                const webcamRatio = webcam.videoWidth / webcam.videoHeight;
-                let destWidth, destHeight, destX, destY;
-
-                if (canvasRatio > webcamRatio) {
-                    destWidth = canvas.width;
-                    destHeight = destWidth / webcamRatio;
-                    destX = 0;
-                    destY = (canvas.height - destHeight) / 2;
-                } else {
-                    destHeight = canvas.height;
-                    destWidth = destHeight * webcamRatio;
-                    destY = 0;
-                    destX = (canvas.width - destWidth) / 2;
+                // Threshold mask for cleaner separation
+                const maskImageData = state.maskCtx.getImageData(0, 0, state.maskCanvas.width, state.maskCanvas.height);
+                const data = maskImageData.data;
+                let minX = state.maskCanvas.width, minY = state.maskCanvas.height, maxX = 0, maxY = 0;
+                for (let y = 0; y < state.maskCanvas.height; y++) {
+                  for (let x = 0; x < state.maskCanvas.width; x++) {
+                    const i = (y * state.maskCanvas.width + x) * 4;
+                    // Use alpha channel for mask, threshold at 180 for more discerning mask
+                    if (data[i + 3] > 180) {
+                      data[i + 3] = 255;
+                      // Track bounding box
+                      if (x < minX) minX = x;
+                      if (x > maxX) maxX = x;
+                      if (y < minY) minY = y;
+                      if (y > maxY) maxY = y;
+                    } else {
+                      data[i + 3] = 0;
+                    }
+                  }
                 }
-                tempCtx.drawImage(webcam, destX, destY, destWidth, destHeight);
+                state.maskCtx.putImageData(maskImageData, 0, 0);
 
+                // Crop to bounding box of mask for tighter framing
+                const cropWidth = maxX - minX;
+                const cropHeight = maxY - minY;
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = cropWidth > 0 ? cropWidth : canvas.width;
+                tempCanvas.height = cropHeight > 0 ? cropHeight : canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                const webcam = ui.webcamVideo;
+                // Draw webcam cropped to bounding box
+                tempCtx.drawImage(
+                  webcam,
+                  minX, minY, cropWidth > 0 ? cropWidth : webcam.videoWidth, cropHeight > 0 ? cropHeight : webcam.videoHeight,
+                  0, 0, tempCanvas.width, tempCanvas.height
+                );
+
+                // Apply mask
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(state.maskCanvas, 0, 0, canvas.width, canvas.height);
-                
+                tempCtx.drawImage(state.maskCanvas, minX, minY, tempCanvas.width, tempCanvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                // Draw cropped, masked webcam onto main canvas
                 ctx.save();
                 ctx.scale(-1, 1);
                 ctx.drawImage(tempCanvas, -canvas.width, 0, canvas.width, canvas.height);

@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.paypal.com https://js.squareupsandbox.com https://squareup.com https://js.paypal.com https://sandbox.web.squarecdn.com https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/;
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: blob: https://menery-customs.s3.us-east-1.amazonaws.com https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/ https://cdn.jsdelivr.net;
-      connect-src 'self' blob: data: https://fonts.googleapis.com https://fonts.gstatic.com https://js.squareupsandbox.com https://sandbox.web.squarecdn.com https://menery-customs.s3.us-east-1.amazonaws.com https://squareup.com https://api-m.sandbox.paypal.com https://api-m.paypal.com https://www.sandbox.paypal.com https://pci-connect.squareupsandbox.com https://o160250.ingest.sentry.io https://cdn.jsdelivr.net https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/;
-      wasm-src 'self' blob: data: https://cdn.jsdelivr.net https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/;
-      media-src 'self' blob: data: https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/ https://cdn.jsdelivr.net;
+      img-src 'self' data: blob:;
+      connect-src 'self' blob: data:;
+      wasm-src 'self' blob: data:;
+      media-src 'self' blob: data:;
       object-src 'none';
       frame-src 'none';
       child-src 'none';
       base-uri 'self';
       form-action 'self';
       manifest-src 'self';
-      worker-src 'self';">
+      worker-src 'self';
+      frame-ancestors 'self';
+    ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Video Dubbing & Green Screen Studio</title>
     <script src="/libs/selfie_segmentation.js" defer></script>
@@ -265,14 +268,15 @@
             showStatus('Processing audio...');
             const fileURL = URL.createObjectURL(file);
             ui.videoPlayer.src = fileURL;
-            
+
+            let audioExtracted = false;
             try {
                 const arrayBuffer = await file.arrayBuffer();
                 state.videoAudioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
+                audioExtracted = true;
             } catch (e) {
-                console.error("Error decoding audio data:", e);
-                showStatus("Could not process the audio from this video file. It might be corrupted or in an unsupported format.", true, true);
-                return;
+                console.warn("Audio extraction failed. Proceeding without audio dubbing.", e);
+                state.videoAudioBuffer = null;
             }
 
             ui.videoPlayer.onloadedmetadata = () => {
@@ -284,13 +288,22 @@
                 ui.fullscreenCanvas.height = h;
                 state.maskCanvas.width = w;
                 state.maskCanvas.height = h;
-                
+
                 ui.videoPlayer.onseeked = () => renderFrame();
                 ui.videoPlayer.currentTime = 0.01;
 
                 ui.uploadSection.classList.add('hidden');
                 ui.editorSection.classList.remove('hidden');
-                hideStatus();
+                if (!audioExtracted) {
+                    showStatus('Audio could not be extracted from this video. You can still use greenscreen and video editing, but audio dubbing is disabled for this file.', true, true);
+                    // Optionally, disable audio dubbing UI elements
+                    ui.modeAudioBtn.disabled = true;
+                    ui.modeAudioBtn.classList.add('cursor-not-allowed', 'bg-gray-600');
+                } else {
+                    hideStatus();
+                    ui.modeAudioBtn.disabled = false;
+                    ui.modeAudioBtn.classList.remove('cursor-not-allowed', 'bg-gray-600');
+                }
             };
         };
         

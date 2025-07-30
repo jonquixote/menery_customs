@@ -263,19 +263,36 @@
         const handleVideoUpload = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            showStatus('Processing audio...');
+            showStatus('Processing video...');
             const fileURL = URL.createObjectURL(file);
             ui.videoPlayer.src = fileURL;
 
             let audioExtracted = false;
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                state.videoAudioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
-                audioExtracted = true;
-            } catch (e) {
-                console.warn("Audio extraction failed. Proceeding without audio dubbing.", e);
+            let audioDecodeFinished = false;
+            let audioDecodeError = null;
+
+            // Start audio extraction, but don't block UI
+            file.arrayBuffer().then(arrayBuffer => {
+                state.audioContext.decodeAudioData(arrayBuffer)
+                    .then(buffer => {
+                        state.videoAudioBuffer = buffer;
+                        audioExtracted = true;
+                        audioDecodeFinished = true;
+                    })
+                    .catch(e => {
+                        console.warn("Audio extraction failed. Proceeding without audio dubbing.", e);
+                        state.videoAudioBuffer = null;
+                        audioExtracted = false;
+                        audioDecodeFinished = true;
+                        audioDecodeError = e;
+                    });
+            }).catch(e => {
+                console.warn("ArrayBuffer extraction failed.", e);
                 state.videoAudioBuffer = null;
-            }
+                audioExtracted = false;
+                audioDecodeFinished = true;
+                audioDecodeError = e;
+            });
 
             ui.videoPlayer.onloadedmetadata = () => {
                 const w = ui.videoPlayer.videoWidth;
@@ -292,16 +309,19 @@
 
                 ui.uploadSection.classList.add('hidden');
                 ui.editorSection.classList.remove('hidden');
-                if (!audioExtracted) {
-                    showStatus('Audio could not be extracted from this video. You can still use greenscreen and video editing, but audio dubbing is disabled for this file.', true, true);
-                    // Optionally, disable audio dubbing UI elements
-                    ui.modeAudioBtn.disabled = true;
-                    ui.modeAudioBtn.classList.add('cursor-not-allowed', 'bg-gray-600');
-                } else {
-                    hideStatus();
-                    ui.modeAudioBtn.disabled = false;
-                    ui.modeAudioBtn.classList.remove('cursor-not-allowed', 'bg-gray-600');
-                }
+
+                // Wait a short time for audio decode, but always proceed
+                setTimeout(() => {
+                    if (!audioExtracted) {
+                        showStatus('Audio could not be extracted from this video. You can still use greenscreen and video editing, but audio dubbing is disabled for this file.', true, true);
+                        ui.modeAudioBtn.disabled = true;
+                        ui.modeAudioBtn.classList.add('cursor-not-allowed', 'bg-gray-600');
+                    } else {
+                        hideStatus();
+                        ui.modeAudioBtn.disabled = false;
+                        ui.modeAudioBtn.classList.remove('cursor-not-allowed', 'bg-gray-600');
+                    }
+                }, 300); // 300ms max wait for decode
             };
         };
         

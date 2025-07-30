@@ -532,9 +532,8 @@
             ctx.drawImage(ui.videoPlayer, 0, 0, canvas.width, canvas.height);
 
             if (state.activeMode === 'greenscreen' && state.modelLoaded && state.latestSegmentationMask) {
-                // --- Improved Masking ---
+                // --- Improved Masking & Aspect Ratio Fix ---
                 state.maskCtx.clearRect(0, 0, state.maskCanvas.width, state.maskCanvas.height);
-                // Stronger blur for smoother edges
                 state.maskCtx.filter = 'blur(12px)';
                 state.maskCtx.drawImage(state.latestSegmentationMask, 0, 0, state.maskCanvas.width, state.maskCanvas.height);
                 state.maskCtx.filter = 'none';
@@ -546,10 +545,8 @@
                 for (let y = 0; y < state.maskCanvas.height; y++) {
                   for (let x = 0; x < state.maskCanvas.width; x++) {
                     const i = (y * state.maskCanvas.width + x) * 4;
-                    // Use alpha channel for mask, threshold at 180 for more discerning mask
                     if (data[i + 3] > 180) {
                       data[i + 3] = 255;
-                      // Track bounding box
                       if (x < minX) minX = x;
                       if (x > maxX) maxX = x;
                       if (y < minY) minY = y;
@@ -561,27 +558,51 @@
                 }
                 state.maskCtx.putImageData(maskImageData, 0, 0);
 
-                // Crop to bounding box of mask for tighter framing
-                const cropWidth = maxX - minX;
-                const cropHeight = maxY - minY;
+                // Calculate bounding box and center vertically for natural framing
+                let cropWidth = maxX - minX;
+                let cropHeight = maxY - minY;
+                // Minimum crop size fallback
+                if (cropWidth < 40 || cropHeight < 40) {
+                  minX = 0; minY = 0; cropWidth = state.maskCanvas.width; cropHeight = state.maskCanvas.height;
+                }
+                // Center crop vertically if bounding box is too high
+                let verticalOffset = 0;
+                if (minY > 0 && cropHeight < state.maskCanvas.height) {
+                  verticalOffset = Math.max(0, Math.floor((state.maskCanvas.height - cropHeight) / 2 - minY));
+                  minY = Math.max(0, minY - verticalOffset);
+                  maxY = Math.min(state.maskCanvas.height, maxY + verticalOffset);
+                  cropHeight = maxY - minY;
+                }
+
+                // Always fit webcam to canvas aspect ratio
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = cropWidth > 0 ? cropWidth : canvas.width;
-                tempCanvas.height = cropHeight > 0 ? cropHeight : canvas.height;
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
                 const tempCtx = tempCanvas.getContext('2d');
 
                 const webcam = ui.webcamVideo;
-                // Draw webcam cropped to bounding box
-                tempCtx.drawImage(
-                  webcam,
-                  minX, minY, cropWidth > 0 ? cropWidth : webcam.videoWidth, cropHeight > 0 ? cropHeight : webcam.videoHeight,
-                  0, 0, tempCanvas.width, tempCanvas.height
-                );
+                // Calculate webcam draw dimensions to fit canvas aspect ratio
+                const webcamRatio = webcam.videoWidth / webcam.videoHeight;
+                const canvasRatio = canvas.width / canvas.height;
+                let drawWidth, drawHeight, drawX, drawY;
+                if (canvasRatio > webcamRatio) {
+                  drawWidth = canvas.width;
+                  drawHeight = drawWidth / webcamRatio;
+                  drawX = 0;
+                  drawY = (canvas.height - drawHeight) / 2;
+                } else {
+                  drawHeight = canvas.height;
+                  drawWidth = drawHeight * webcamRatio;
+                  drawY = 0;
+                  drawX = (canvas.width - drawWidth) / 2;
+                }
+                tempCtx.drawImage(webcam, drawX, drawY, drawWidth, drawHeight);
 
-                // Apply mask
+                // Apply mask, aligned and scaled to canvas
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(state.maskCanvas, minX, minY, tempCanvas.width, tempCanvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(state.maskCanvas, 0, 0, canvas.width, canvas.height);
 
-                // Draw cropped, masked webcam onto main canvas
+                // Draw masked webcam onto main canvas
                 ctx.save();
                 ctx.scale(-1, 1);
                 ctx.drawImage(tempCanvas, -canvas.width, 0, canvas.width, canvas.height);

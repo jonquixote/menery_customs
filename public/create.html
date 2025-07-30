@@ -561,11 +561,9 @@
                 // Calculate bounding box and center vertically for natural framing
                 let cropWidth = maxX - minX;
                 let cropHeight = maxY - minY;
-                // Minimum crop size fallback
                 if (cropWidth < 40 || cropHeight < 40) {
                   minX = 0; minY = 0; cropWidth = state.maskCanvas.width; cropHeight = state.maskCanvas.height;
                 }
-                // Center crop vertically if bounding box is too high
                 let verticalOffset = 0;
                 if (minY > 0 && cropHeight < state.maskCanvas.height) {
                   verticalOffset = Math.max(0, Math.floor((state.maskCanvas.height - cropHeight) / 2 - minY));
@@ -574,25 +572,24 @@
                   cropHeight = maxY - minY;
                 }
 
-                // Always fit webcam to canvas aspect ratio
+                // --- Camera aspect ratio matches uploaded video ---
+                const videoRatio = ui.videoPlayer.videoWidth / ui.videoPlayer.videoHeight;
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = canvas.width;
                 tempCanvas.height = canvas.height;
                 const tempCtx = tempCanvas.getContext('2d');
 
                 const webcam = ui.webcamVideo;
-                // Calculate webcam draw dimensions to fit canvas aspect ratio
-                const webcamRatio = webcam.videoWidth / webcam.videoHeight;
-                const canvasRatio = canvas.width / canvas.height;
+                // Calculate webcam draw dimensions to match uploaded video aspect ratio
                 let drawWidth, drawHeight, drawX, drawY;
-                if (canvasRatio > webcamRatio) {
+                if (videoRatio > 1) {
                   drawWidth = canvas.width;
-                  drawHeight = drawWidth / webcamRatio;
+                  drawHeight = drawWidth / videoRatio;
                   drawX = 0;
                   drawY = (canvas.height - drawHeight) / 2;
                 } else {
                   drawHeight = canvas.height;
-                  drawWidth = drawHeight * webcamRatio;
+                  drawWidth = drawHeight * videoRatio;
                   drawY = 0;
                   drawX = (canvas.width - drawWidth) / 2;
                 }
@@ -615,7 +612,10 @@
                 ui.greenscreenPreviewCtx.drawImage(canvas, 0, 0, ui.greenscreenPreviewCanvas.width, ui.greenscreenPreviewCanvas.height);
             }
 
-            if (isLive) {
+            // --- Use requestVideoFrameCallback for perfect video/audio sync ---
+            if (isLive && ui.videoPlayer.requestVideoFrameCallback) {
+                ui.videoPlayer.requestVideoFrameCallback(() => renderFrame());
+            } else if (isLive) {
                 state.animationFrameId = requestAnimationFrame(renderFrame);
             }
         };

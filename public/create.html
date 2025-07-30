@@ -365,7 +365,7 @@
         };
         
         const sendWebcamFrameToMediaPipe = async () => {
-            // Only run if model is loaded, webcam is ready, and app is active
+            // Only run if model is loaded and webcam is ready
             if (!state.modelLoaded || !state.mediaPipeModel) {
                 console.warn('MediaPipe model not loaded, frame loop not running.');
                 showStatus('Green screen AI is not running. Model not loaded.', true, true);
@@ -376,16 +376,12 @@
                 requestAnimationFrame(sendWebcamFrameToMediaPipe);
                 return;
             }
-            // If app is not previewing or recording, don't send frames
-            if (!state.isPreviewing && !state.isRecording) {
-                // Only run if greenscreen mode is active
-                if (state.activeMode !== 'greenscreen') {
-                    console.warn('Not in greenscreen mode, frame loop not running.');
-                    return;
-                }
-            }
+            // Always run frame loop for greenscreen preview
             try {
                 await state.mediaPipeModel.send({image: ui.webcamVideo});
+                // Draw live camera to greenscreen preview window
+                ui.greenscreenPreviewCtx.clearRect(0, 0, ui.greenscreenPreviewCanvas.width, ui.greenscreenPreviewCanvas.height);
+                ui.greenscreenPreviewCtx.drawImage(ui.webcamVideo, 0, 0, ui.greenscreenPreviewCanvas.width, ui.greenscreenPreviewCanvas.height);
             } catch (err) {
                 console.error('MediaPipe send error:', err);
                 showStatus('Error sending webcam frame to AI model. See console.', true, true);

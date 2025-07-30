@@ -24,7 +24,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://www.paypal.com", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "https://js.paypal.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "https://www.paypal.com", "https://cdn.tailwindcss.com", "https://js.squareupsandbox.com", "https://squareup.com", "https://js.paypal.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://sandbox.web.squarecdn.com", "'unsafe-inline'"],
         fontSrc: [
           "'self'",

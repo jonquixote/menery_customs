@@ -600,10 +600,21 @@
                 tempCtx.drawImage(state.maskCanvas, 0, 0, canvas.width, canvas.height);
 
                 // Draw masked webcam onto main canvas
-            // ...existing code...
+                ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+            }
+
+            ctx.restore();
+        };
+
+        const resetApp = () => {
+            location.reload();
         };
         const waitForLibraries = () => {
-                // ...existing code...
+            if (window.SelfieSegmentation && window.RecordRTC) {
+                loadMediaPipeModelInBackground();
+            } else {
+                setTimeout(waitForLibraries, 100);
+            }
         };
 
         // --- Event Listeners ---

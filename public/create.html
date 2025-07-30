@@ -602,12 +602,61 @@
                 // Draw masked webcam onto main canvas
                 ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
             }
-
             ctx.restore();
+
+            if (isLive) {
+                state.animationFrameId = requestAnimationFrame(renderFrame);
+            }
+        };
+
+        const startRenderLoop = () => {
+            if (state.animationFrameId) {
+                cancelAnimationFrame(state.animationFrameId);
+            }
+            state.animationFrameId = requestAnimationFrame(renderFrame);
         };
 
         const resetApp = () => {
-            location.reload();
+            if (state.isRecording) {
+                stopRecording();
+            }
+            if (state.animationFrameId) {
+                cancelAnimationFrame(state.animationFrameId);
+            }
+            if (state.countdownTimerId) {
+                cancelAnimationFrame(state.countdownTimerId);
+            }
+            if (state.activeVideoAudioSource) {
+                try {
+                    state.activeVideoAudioSource.stop();
+                } catch (e) { /* Already stopped */ }
+            }
+
+            ui.playbackSection.classList.add('hidden');
+            ui.editorSection.classList.add('hidden');
+            ui.uploadSection.classList.remove('hidden');
+            ui.appContent.classList.remove('hidden');
+            ui.startSection.classList.add('hidden');
+            ui.recordingControls.classList.add('hidden');
+            ui.modeSelection.classList.remove('hidden');
+            ui.videoUpload.value = '';
+            ui.finalVideo.src = '';
+            ui.downloadBtn.href = '#';
+
+            state.activeMode = null;
+            state.recorder = null;
+            state.isRecording = false;
+            state.isPreviewing = false;
+            state.latestSegmentationMask = null;
+            state.videoAudioBuffer = null;
+            if (state.micSourceNode) {
+                state.micSourceNode.disconnect();
+            }
+            state.micSourceNode = null;
+            state.activeVideoAudioSource = null;
+            
+            // Go back to the initial state after permissions are granted
+            ui.mainCanvas.getContext('2d').clearRect(0, 0, ui.mainCanvas.width, ui.mainCanvas.height);
         };
         const waitForLibraries = () => {
             if (window.SelfieSegmentation && window.RecordRTC) {

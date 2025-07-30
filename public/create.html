@@ -600,50 +600,10 @@
                 tempCtx.drawImage(state.maskCanvas, 0, 0, canvas.width, canvas.height);
 
                 // Draw masked webcam onto main canvas
-                ctx.save();
-            if (state.activeMode === 'greenscreen' && !isLive) {
+            // ...existing code...
         };
         const waitForLibraries = () => {
-                // --- Camera aspect ratio matches uploaded video, mask always aligned with camera ---
-                const videoRatio = ui.videoPlayer.videoWidth / ui.videoPlayer.videoHeight;
-                const webcamRatio = ui.webcamVideo.videoWidth / ui.webcamVideo.videoHeight;
-                // Calculate camera draw region on canvas to match uploaded video aspect ratio
-                let drawWidth, drawHeight, drawX, drawY;
-                if (videoRatio > 1) {
-                  drawWidth = canvas.width;
-                  drawHeight = drawWidth / webcamRatio;
-                  drawX = 0;
-                  drawY = (canvas.height - drawHeight) / 2;
-                } else {
-                  drawHeight = canvas.height;
-                  drawWidth = drawHeight * webcamRatio;
-                  drawY = 0;
-                  drawX = (canvas.width - drawWidth) / 2;
-                }
-                // Draw camera video to temp canvas at correct region
-                const camCanvas = document.createElement('canvas');
-                camCanvas.width = drawWidth;
-                camCanvas.height = drawHeight;
-                const camCtx = camCanvas.getContext('2d');
-                camCtx.drawImage(ui.webcamVideo, 0, 0, drawWidth, drawHeight);
-
-                // Draw mask to same region on another temp canvas
-                const maskCanvas = document.createElement('canvas');
-                maskCanvas.width = drawWidth;
-                maskCanvas.height = drawHeight;
-                const maskCtx = maskCanvas.getContext('2d');
-                maskCtx.drawImage(state.maskCanvas, 0, 0, drawWidth, drawHeight);
-
-                // Composite mask and camera
-                camCtx.globalCompositeOperation = 'destination-in';
-                camCtx.drawImage(maskCanvas, 0, 0, drawWidth, drawHeight);
-
-                // Draw masked camera to main canvas, mirrored
-                ctx.save();
-                ctx.scale(-1, 1);
-                ctx.drawImage(camCanvas, -drawX - drawWidth, drawY, drawWidth, drawHeight);
-                ctx.restore();
-            }, 100);
+                // ...existing code...
         };
 
         // --- Event Listeners ---

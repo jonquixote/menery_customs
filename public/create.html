@@ -246,12 +246,23 @@
                 ui.rawCameraPreview.srcObject = state.userMediaStream;
                 ui.webcamVideo.srcObject = state.userMediaStream;
                 await Promise.all([ui.rawCameraPreview.play(), ui.webcamVideo.play()]);
-                
+
                 state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
                 ui.startSection.classList.add('hidden');
                 ui.appContent.classList.remove('hidden');
                 hideStatus();
+
+                // Automatically activate greenscreen mode and show camera preview
+                setTimeout(() => {
+                    if (ui.modeGreenscreenBtn && !ui.modeGreenscreenBtn.disabled) {
+                        ui.modeGreenscreenBtn.click();
+                    } else {
+                        // If model not loaded yet, show raw camera preview
+                        ui.rawCameraPreviewContainer.classList.remove('hidden');
+                        ui.greenscreenPreviewContainer.classList.add('hidden');
+                    }
+                }, 500);
             } catch (err) {
                 console.error('Media access error:', err);
                 showStatus('Camera and microphone access is required. Please allow permissions and refresh the page.', true, true);
